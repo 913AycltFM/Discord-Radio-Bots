@@ -1,0 +1,17 @@
+[Unit]
+Description=Discord 24/7 AzuraCast Radio Bots
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_UBUNTU_USERNAME
+WorkingDirectory=/home/YOUR_UBUNTU_USERNAME/discord-radio
+ExecStart=/home/YOUR_UBUNTU_USERNAME/discord-radio/venv/bin/python /home/YOUR_UBUNTU_USERNAME/discord-radio/main.py
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
