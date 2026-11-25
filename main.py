@@ -5,6 +5,7 @@ from pathlib import Path
 
 import aiohttp
 import discord
+from discord.ext import commands
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "bots.json"
@@ -42,7 +43,7 @@ async def fetch_now_playing(
         return None
 
 
-class RadioBot(discord.Client):
+class RadioBot(commands.Bot):
     def __init__(
         self,
         *,
@@ -53,7 +54,7 @@ class RadioBot(discord.Client):
         fallback_status: str,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(command_prefix='.', help_command=None, **kwargs)
         self.bot_name = name
         self.channel_id = channel_id
         self.stream_url = stream_url
@@ -127,7 +128,6 @@ class RadioBot(discord.Client):
                 await asyncio.sleep(POLL_SECONDS)
 
     async def ensure_connected(self) -> None:
-        await self.wait_until_ready()
         channel = self.get_channel(self.channel_id)
 
         if not isinstance(channel, discord.VoiceChannel):
@@ -154,11 +154,55 @@ class RadioBot(discord.Client):
         except discord.DiscordException:
             log.exception("[%s] Voice connection failed", self.bot_name)
 
+    async def connection_supervisor(self) -> None:
+        await self.wait_until_ready()
+        while not self.is_closed():
+            try:
+                await self.ensure_connected()
+            except Exception:
+                log.exception('[%s] Voice connection check failed', self.bot_name)
+            await asyncio.sleep(15)
+
+    @commands.command(name='nowplaying', aliases=['np'])
+    async def nowplaying_command(self, ctx: commands.Context) -> None:
+        await ctx.send(f'**{self.bot_name}:** {self.current_title or self.fallback_status}')
+
+    @commands.command(name='status')
+    async def status_command(self, ctx: commands.Context) -> None:
+        channel = self.get_channel(self.channel_id)
+        voice = discord.utils.get(self.voice_clients, guild=channel.guild) if isinstance(channel, discord.VoiceChannel) else None
+        connected = bool(voice and voice.is_connected())
+        playing = bool(voice and voice.is_playing())
+        await ctx.send(f'**{self.bot_name}** — Voice: {"connected" if connected else "disconnected"}; stream: {"playing" if playing else "not playing"}.')
+
+    @commands.command(name='reconnect')
+    @commands.has_guild_permissions(manage_guild=True)
+    async def reconnect_command(self, ctx: commands.Context) -> None:
+        channel = self.get_channel(self.channel_id)
+        if not isinstance(channel, discord.VoiceChannel):
+            await ctx.send('I cannot find my configured voice channel.')
+            return
+        voice = discord.utils.get(self.voice_clients, guild=channel.guild)
+        if voice and voice.is_connected():
+            await voice.disconnect(force=True)
+        await self.ensure_connected()
+        await ctx.send(f'Reconnected to **{channel.name}** and restarted the radio stream.')
+
+    @commands.command(name='help')
+    async def help_command(self, ctx: commands.Context) -> None:
+        await ctx.send('Radio commands: .nowplaying (.np), .status, .reconnect (Manage Server), .help')
+
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send('You need Manage Server permission to use that command.')
+        elif not isinstance(error, commands.CommandNotFound):
+            log.error('[%s] Command error: %s', self.bot_name, error)
+            await ctx.send('The command failed. Check the bot logs.')
     async def on_ready(self) -> None:
         log.info("[%s] Logged in as %s", self.bot_name, self.user)
 
         if self.connection_task is None or self.connection_task.done():
-            self.connection_task = asyncio.create_task(self.ensure_connected())
+            self.connection_task = asyncio.create_task(self.connection_supervisor())
 
         if self.metadata_task is None or self.metadata_task.done():
             self.metadata_task = asyncio.create_task(self.metadata_loop())
@@ -207,6 +251,7 @@ async def main() -> None:
             )
 
     intents = discord.Intents.default()
+    intents.message_content = True
     await asyncio.gather(*(run_bot(config, intents) for config in configs))
 
 
