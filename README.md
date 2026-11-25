@@ -185,7 +185,7 @@ Follow logs:
 sudo journalctl -u discord-radio.service -f
 ```
 
-Restart after editing `bots.json`:
+Restart after editing the private bot configuration:
 
 ```bash
 sudo systemctl restart discord-radio.service
@@ -205,13 +205,18 @@ sudo systemctl start discord-radio.service
 
 ## Configuration and security notes
 
-- This project expects exactly four bot entries in `bots.json` on the Raspberry Pi.
+- This project expects exactly four bot entries in the private configuration on the Raspberry Pi.
 - Each bot needs its own Discord application/token and its own voice channel.
-- Do not commit or push your locally edited `bots.json`. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
+- Do not commit or push your locally edited bot configuration. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
 - The stream URLs must be direct AzuraCast listener URLs, not just the AzuraCast website homepage.
+- For hosts on the same LAN as AzuraCast, an HTTP listener URL using the server's private LAN address can avoid routing the radio source through the public hostname. Use the correct LAN address for that installation; do not hard-code a private host address into a reusable public template.
 - The bot checks now-playing metadata every 10 seconds. Change `POLL_SECONDS` in `main.py` to adjust this interval.
 - The bots are designed to remain in their voice channels continuously while the service, network, and Discord are available. The supervisor retries every 15 seconds; systemd restarts the service after process failure.
 - Slash commands are registered with Discord when each bot starts. Restart the service if you change the command definitions.
 - `/reconnect` is restricted to members with Manage Server permission. Message Content Intent is not required for these slash commands.
 - `/volume` controls the PCM audio output, so the bot uses FFmpeg PCM decoding before sending audio to Discord.
 - This project does not configure Discord applications or create voice channels automatically; those steps are completed in Discord.
+
+## Operations log
+
+See [the November 25, 2026 operations log](docs/OPERATIONS-2026-11-25.md) for the private-LAN stream source change, service restart verification, UDP receive-buffer troubleshooting, and outstanding DAVE/audio-dropout diagnostics.
