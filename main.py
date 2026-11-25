@@ -17,6 +17,18 @@ logging.basicConfig(
 )
 log = logging.getLogger("discord-radio")
 
+# PCM audio must be encoded with Opus before it can be sent to Discord voice.
+try:
+    discord.opus.load_opus("libopus.so.0")
+except OSError:
+    log.exception("Could not load the Opus library")
+    raise
+
+if not discord.opus.is_loaded():
+    raise RuntimeError("Opus is required for PCM Discord voice playback but could not be loaded.")
+
+log.info("Opus audio encoder loaded.")
+
 FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn",
