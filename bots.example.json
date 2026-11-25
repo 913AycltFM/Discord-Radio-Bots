@@ -1,0 +1,34 @@
+[
+  {
+    "name": "91.3 Ayclt FM",
+    "token": "PASTE_DISCORD_BOT_TOKEN_1",
+    "channel_id": 111111111111111111,
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm/radio.mp3",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm",
+    "status_text": "91.3 Ayclt FM Live"
+  },
+  {
+    "name": "Station 2",
+    "token": "PASTE_DISCORD_BOT_TOKEN_2",
+    "channel_id": 222222222222222222,
+    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
+    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
+    "status_text": "Station 2 Live"
+  },
+  {
+    "name": "Station 3",
+    "token": "PASTE_DISCORD_BOT_TOKEN_3",
+    "channel_id": 333333333333333333,
+    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
+    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
+    "status_text": "Station 3 Live"
+  },
+  {
+    "name": "Station 4",
+    "token": "PASTE_DISCORD_BOT_TOKEN_4",
+    "channel_id": 444444444444444444,
+    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
+    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
+    "status_text": "Station 4 Live"
+  }
+]
