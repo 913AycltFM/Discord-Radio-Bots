@@ -24,11 +24,11 @@
     "status_text": "91.3 Ayclt FM HD3 Live"
   },
   {
-    "name": "Gaming Central Radio",
+    "name": "91.3 Ayclt FM HD4",
     "token": "PASTE_DISCORD_BOT_TOKEN_4",
     "channel_id": 444444444444444444,
-    "stream_url": "https://radio.913aycltfm.com/listen/gaming_central_radio/radio.mp3",
-    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/gaming_central_radio",
-    "status_text": "Gaming Central Radio Live"
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd4/radio.mp3",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd4",
+    "status_text": "91.3 Ayclt FM HD4 Live"
   }
 ]
