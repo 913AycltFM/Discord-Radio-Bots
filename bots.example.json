@@ -5,7 +5,7 @@
     "channel_id": 111111111111111111,
     "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm/radio.mp3",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm",
-    "status_text": "91.3 Ayclt FM Live"
+    "status_text": "91.3 Ayclt FM"
   },
   {
     "name": "91.3 Ayclt FM HD2",
@@ -13,7 +13,7 @@
     "channel_id": 222222222222222222,
     "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd2/radio.mp3",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd2",
-    "status_text": "91.3 Ayclt FM HD2 Live"
+    "status_text": "91.3 Ayclt FM HD2"
   },
   {
     "name": "91.3 Ayclt FM HD3",
@@ -21,7 +21,7 @@
     "channel_id": 333333333333333333,
     "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd3/radio.mp3",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd3",
-    "status_text": "91.3 Ayclt FM HD3 Live"
+    "status_text": "91.3 Ayclt FM HD3"
   },
   {
     "name": "91.3 Ayclt FM HD4",
@@ -29,6 +29,6 @@
     "channel_id": 444444444444444444,
     "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd4/radio.mp3",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd4",
-    "status_text": "91.3 Ayclt FM HD4 Live"
+    "status_text": "91.3 Ayclt FM HD4"
   }
 ]
