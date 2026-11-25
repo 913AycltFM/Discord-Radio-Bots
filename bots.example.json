@@ -8,27 +8,27 @@
     "status_text": "91.3 Ayclt FM Live"
   },
   {
-    "name": "Station 2",
+    "name": "91.3 Ayclt FM HD2",
     "token": "PASTE_DISCORD_BOT_TOKEN_2",
     "channel_id": 222222222222222222,
-    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
-    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
-    "status_text": "Station 2 Live"
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd2/radio.mp3",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd2",
+    "status_text": "91.3 Ayclt FM HD2 Live"
   },
   {
-    "name": "Station 3",
+    "name": "91.3 Ayclt FM HD3",
     "token": "PASTE_DISCORD_BOT_TOKEN_3",
     "channel_id": 333333333333333333,
-    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
-    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
-    "status_text": "Station 3 Live"
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd3/radio.mp3",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd3",
+    "status_text": "91.3 Ayclt FM HD3 Live"
   },
   {
-    "name": "Station 4",
+    "name": "Gaming Central Radio",
     "token": "PASTE_DISCORD_BOT_TOKEN_4",
     "channel_id": 444444444444444444,
-    "stream_url": "https://YOUR_AZURACAST_DOMAIN/listen/YOUR_STATION_SHORTCODE/radio.mp3",
-    "nowplaying_url": "https://YOUR_AZURACAST_DOMAIN/api/nowplaying/YOUR_STATION_SHORTCODE",
-    "status_text": "Station 4 Live"
+    "stream_url": "https://radio.913aycltfm.com/listen/gaming_central_radio/radio.mp3",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/gaming_central_radio",
+    "status_text": "Gaming Central Radio Live"
   }
 ]
