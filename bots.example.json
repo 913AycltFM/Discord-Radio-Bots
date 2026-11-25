@@ -3,7 +3,7 @@
     "name": "91.3 Ayclt FM",
     "token": "PASTE_DISCORD_BOT_TOKEN_1",
     "channel_id": 111111111111111111,
-    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm/radio.mp3",
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm",
     "status_text": "La Marque Texas #1 Hit Music Station"
   },
@@ -11,7 +11,7 @@
     "name": "91.3 Ayclt FM HD2",
     "token": "PASTE_DISCORD_BOT_TOKEN_2",
     "channel_id": 222222222222222222,
-    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd2/radio.mp3",
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd2/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd2",
     "status_text": "La Marque Texas #1 Hit Music Station"
   },
@@ -19,7 +19,7 @@
     "name": "91.3 Ayclt FM HD3",
     "token": "PASTE_DISCORD_BOT_TOKEN_3",
     "channel_id": 333333333333333333,
-    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd3/radio.mp3",
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd3/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd3",
     "status_text": "La Marque Texas #1 Hit Music Station"
   },
@@ -27,7 +27,7 @@
     "name": "91.3 Ayclt FM HD4",
     "token": "PASTE_DISCORD_BOT_TOKEN_4",
     "channel_id": 444444444444444444,
-    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd4/radio.mp3",
+    "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd4/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd4",
     "status_text": "La Marque Texas #1 Hit Music Station"
   }
