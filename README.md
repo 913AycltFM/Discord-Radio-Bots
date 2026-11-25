@@ -10,7 +10,7 @@ Designed for **Raspberry Pi 5 (16 GB RAM) running Ubuntu Server 24.04**.
 - Live audio from AzuraCast using FFmpeg.
 - Now-playing metadata from the AzuraCast `/api/nowplaying/{station_shortcode}` endpoint.
 - Updates the bot's Listening activity and the voice-channel status when the track changes.
-- Discord slash commands: `/nowplaying`, `/status`, `/reconnect`, and `/help`.
+- Discord slash commands: `/nowplaying`, `/status`, `/reconnect`, `/help`, `/play`, `/pause`, `/volume`, and `/ping`.
 - A background supervisor checks voice connectivity every 15 seconds and reconnects/restarts playback after a disconnect or stream failure.
 - systemd service for automatic startup and restart.
 
@@ -214,4 +214,5 @@ sudo systemctl start discord-radio.service
 - The bots are designed to remain in their voice channels continuously while the service, network, and Discord are available. The supervisor retries every 15 seconds; systemd restarts the service after process failure.
 - Slash commands are registered with Discord when each bot starts. Restart the service if you change the command definitions.
 - `/reconnect` is restricted to members with Manage Server permission. Message Content Intent is not required for these slash commands.
+- `/volume` controls the PCM audio output, so the bot uses FFmpeg PCM decoding before sending audio to Discord.
 - This project does not configure Discord applications or create voice channels automatically; those steps are completed in Discord.
