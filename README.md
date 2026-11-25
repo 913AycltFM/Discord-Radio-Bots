@@ -19,7 +19,7 @@ Designed for **Raspberry Pi 5 (16 GB RAM) running Ubuntu Server 24.04**.
 | File | Purpose |
 | --- | --- |
 | `main.py` | Runs all four bots concurrently |
-| `bots.example.json` | Safe configuration template; contains no real tokens |
+| `bots.json` (public template; placeholders only) | Safe configuration template; contains no real tokens |
 | `requirements.txt` | Python dependencies |
 | `.gitignore` | Excludes tokens, local config, and virtual environments |
 | `systemd/discord-radio.service.example` | Example systemd unit |
@@ -76,9 +76,7 @@ SSH into the Raspberry Pi and run:
 sudo apt update
 sudo apt install -y ffmpeg libopus0 python3-venv python3-dev build-essential git
 
-git clone https://github.com/913AycltFM/Discord-Radio-Bots.git
-mkdir -p ~/discord-radio
-cp -a Discord-Radio-Bots/. ~/discord-radio/
+git clone https://github.com/913AycltFM/Discord-Radio-Bots.git ~/discord-radio
 cd ~/discord-radio
 
 python3 -m venv venv
@@ -90,15 +88,15 @@ If you cloned the repository somewhere else, adjust the copy command or use that
 
 ## 4. Configure the four bots
 
-Create your private configuration file:
+Create your private configuration file from the public template:
 
 ```bash
 cd ~/discord-radio
-cp bots.example.json bots.json
-nano bots.json
+cp bots.json bots.private.json
+nano bots.private.json
 ```
 
-In `bots.json`, replace each example bot token and channel ID with your real values:
+In `bots.private.json`, replace each example bot token and channel ID with your real values:
 
 | Configuration entry | What to enter |
 | --- | --- |
@@ -129,10 +127,10 @@ Save and exit Nano with **Ctrl+O**, press **Enter**, then **Ctrl+X**.
 Secure the token file:
 
 ```bash
-chmod 600 ~/discord-radio/bots.json
+chmod 600 ~/discord-radio/bots.private.json
 ```
 
-The `.gitignore` excludes `bots.json`; do not force-add it to Git. **Do not upload your real bot tokens or private configuration file to the public GitHub repository.** The public `bots.example.json` is only a template.
+The `.gitignore` excludes `bots.json`; do not force-add it to Git. **Do not upload your real bot tokens or private configuration file to the public GitHub repository.** The public `bots.json` (public template; placeholders only) is only a template.
 
 ## 5. Test manually
 
@@ -186,7 +184,7 @@ Follow logs:
 sudo journalctl -u discord-radio.service -f
 ```
 
-Restart after editing `bots.json`:
+Restart after editing `bots.private.json`:
 
 ```bash
 sudo systemctl restart discord-radio.service
@@ -206,9 +204,9 @@ sudo systemctl start discord-radio.service
 
 ## Configuration and security notes
 
-- This project expects exactly four bot entries in `bots.json`.
+- This project expects exactly four bot entries in the private `bots.private.json` file.
 - Each bot needs its own Discord application/token and its own voice channel.
-- Do not commit `bots.json`. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
+- Do not commit `bots.private.json`. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
 - The stream URLs must be direct AzuraCast listener URLs, not just the AzuraCast website homepage.
 - The bot checks now-playing metadata every 10 seconds. Change `POLL_SECONDS` in `main.py` to adjust this interval.
 - The bots are designed to remain in their voice channels continuously while the service, network, and Discord are available. The supervisor retries every 15 seconds; systemd restarts the service after process failure.
