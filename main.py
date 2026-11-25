@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 BASE_DIR = Path(__file__).resolve().parent
-CONFIG_FILE = BASE_DIR / "bots.private.json"
+CONFIG_FILE = BASE_DIR / "bots.json"
 POLL_SECONDS = 10
 
 logging.basicConfig(
@@ -321,14 +321,14 @@ async def run_bot(config: dict, intents: discord.Intents) -> None:
 async def main() -> None:
     if not CONFIG_FILE.is_file():
         raise SystemExit(
-            "Missing bots.private.json. Copy bots.json to bots.private.json and configure it."
+            "Missing bots.json. Create bots.json from the repository template and configure it."
         )
 
     with CONFIG_FILE.open("r", encoding="utf-8") as config_file:
         configs = json.load(config_file)
 
     if not isinstance(configs, list) or len(configs) != 4:
-        raise SystemExit("bots.private.json must contain a JSON array with exactly four bots.")
+        raise SystemExit("bots.json must contain a JSON array with exactly four bots.")
 
     required = {"name", "token", "channel_id", "stream_url", "nowplaying_url"}
     for index, config in enumerate(configs, start=1):
