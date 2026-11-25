@@ -92,7 +92,7 @@ Create your private configuration file:
 
 ```bash
 cd ~/discord-radio
-nano bots.private.json
+nano bots.json
 ```
 
 When Nano opens, copy the configuration structure from the public [`bots.json`](https://github.com/913AycltFM/Discord-Radio-Bots/blob/main/bots.json) template and paste it into `bots.private.json`. Then replace the example bot tokens and channel IDs with your real values. Save with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**.
