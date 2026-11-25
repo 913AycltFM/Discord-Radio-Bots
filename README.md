@@ -141,7 +141,7 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Confirm that all four bots log in, join their assigned voice channels, play their assigned streams, and update their Listening activity/channel status. In a server text channel, type `/` and select `/nowplaying`, `/status`, or `/help` from the Discord command picker. A member with Manage Server permission can also run `/reconnect`. The bots sync their slash commands with Discord when they start; global command updates can take a little time to appear. Stop the test with **Ctrl+C**.
+Confirm that all four bots log in, join their assigned voice channels, play their assigned streams, and update their Listening activity/channel status. In a server text channel, type `/` and select `/nowplaying`, `/status`, `/help`, `/play`, `/pause`, `/volume`, or `/ping` from the Discord command picker. `/volume` requires a number from 0 to 100. A member with Manage Server permission can also run `/reconnect`. `/pause` keeps the bot in the voice channel with audio paused; `/play` resumes or starts playback. The bots sync their slash commands with Discord when they start; global command updates can take a little time to appear. Stop the test with **Ctrl+C**.
 
 If a bot cannot update the voice-channel status, check that it has Manage Channels permission in that server. If it cannot join or play audio, check View Channel, Connect, Speak, the channel ID, the stream URL, and FFmpeg installation.
 
