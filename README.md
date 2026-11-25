@@ -128,10 +128,10 @@ Save and exit Nano with **Ctrl+O**, press **Enter**, then **Ctrl+X**.
 Secure the token file:
 
 ```bash
-chmod 600 ~/discord-radio/bots.private.json
+chmod 600 ~/discord-radio/bots.json
 ```
 
-The `.gitignore` excludes `bots.private.json`. Keep your real bot tokens in that private file only. **Never upload `bots.private.json` or real Discord tokens to the public GitHub repository.** The committed `bots.json` contains placeholders only.
+The GitHub repository is public. Your real `bots.json` configuration must remain only on the Raspberry Pi. Do not commit or push changes to `bots.json` after adding real tokens. The copy in GitHub must remain the placeholder-only template.
 
 ## 5. Test manually
 
@@ -185,7 +185,7 @@ Follow logs:
 sudo journalctl -u discord-radio.service -f
 ```
 
-Restart after editing `bots.private.json`:
+Restart after editing `bots.json`:
 
 ```bash
 sudo systemctl restart discord-radio.service
@@ -205,9 +205,9 @@ sudo systemctl start discord-radio.service
 
 ## Configuration and security notes
 
-- This project expects exactly four bot entries in the private `bots.private.json` file.
+- This project expects exactly four bot entries in `bots.json` on the Raspberry Pi.
 - Each bot needs its own Discord application/token and its own voice channel.
-- Do not commit `bots.private.json`. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
+- Do not commit or push your locally edited `bots.json`. If a token is accidentally exposed, reset it immediately in the Discord Developer Portal.
 - The stream URLs must be direct AzuraCast listener URLs, not just the AzuraCast website homepage.
 - The bot checks now-playing metadata every 10 seconds. Change `POLL_SECONDS` in `main.py` to adjust this interval.
 - The bots are designed to remain in their voice channels continuously while the service, network, and Discord are available. The supervisor retries every 15 seconds; systemd restarts the service after process failure.
