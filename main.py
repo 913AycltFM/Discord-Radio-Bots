@@ -54,7 +54,13 @@ class RadioBot(commands.Bot):
         fallback_status: str,
         **kwargs,
     ):
-        super().__init__(command_prefix='.', help_command=None, **kwargs)
+        super().__init__(command_prefix=commands.when_mentioned, help_command=None, **kwargs)
+        self.tree.add_command(discord.app_commands.Command(name='nowplaying', description='Show the currently playing song.', callback=self.nowplaying_slash))
+        self.tree.add_command(discord.app_commands.Command(name='status', description='Check this radio bot connection and stream status.', callback=self.status_slash))
+        reconnect_command = discord.app_commands.Command(name='reconnect', description='Reconnect this bot to its radio voice channel.', callback=self.reconnect_slash)
+        reconnect_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
+        self.tree.add_command(reconnect_command)
+        self.tree.add_command(discord.app_commands.Command(name='help', description='Show the available radio commands.', callback=self.help_slash))
         self.bot_name = name
         self.channel_id = channel_id
         self.stream_url = stream_url
@@ -163,41 +169,67 @@ class RadioBot(commands.Bot):
                 log.exception('[%s] Voice connection check failed', self.bot_name)
             await asyncio.sleep(15)
 
-    @commands.command(name='nowplaying', aliases=['np'])
-    async def nowplaying_command(self, ctx: commands.Context) -> None:
-        await ctx.send(f'**{self.bot_name}:** {self.current_title or self.fallback_status}')
+    async def setup_hook(self) -> None:
+        synced = await self.tree.sync()
+        log.info("[%s] Synced %s slash commands", self.bot_name, len(synced))
 
-    @commands.command(name='status')
-    async def status_command(self, ctx: commands.Context) -> None:
+    async def nowplaying_slash(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_message(
+            f"**{self.bot_name}:** {self.current_title or self.fallback_status}"
+        )
+
+    async def status_slash(self, interaction: discord.Interaction) -> None:
         channel = self.get_channel(self.channel_id)
-        voice = discord.utils.get(self.voice_clients, guild=channel.guild) if isinstance(channel, discord.VoiceChannel) else None
+        voice = (
+            discord.utils.get(self.voice_clients, guild=channel.guild)
+            if isinstance(channel, discord.VoiceChannel)
+            else None
+        )
         connected = bool(voice and voice.is_connected())
         playing = bool(voice and voice.is_playing())
-        await ctx.send(f'**{self.bot_name}** — Voice: {"connected" if connected else "disconnected"}; stream: {"playing" if playing else "not playing"}.')
+        await interaction.response.send_message(
+            f"**{self.bot_name}** — Voice: "
+            f"{'connected' if connected else 'disconnected'}; stream: "
+            f"{'playing' if playing else 'not playing'}."
+        )
 
-    @commands.command(name='reconnect')
-    @commands.has_guild_permissions(manage_guild=True)
-    async def reconnect_command(self, ctx: commands.Context) -> None:
+    async def reconnect_slash(self, interaction: discord.Interaction) -> None:
         channel = self.get_channel(self.channel_id)
         if not isinstance(channel, discord.VoiceChannel):
-            await ctx.send('I cannot find my configured voice channel.')
+            await interaction.response.send_message(
+                "I cannot find my configured voice channel.", ephemeral=True
+            )
             return
+        await interaction.response.defer(ephemeral=True)
         voice = discord.utils.get(self.voice_clients, guild=channel.guild)
         if voice and voice.is_connected():
             await voice.disconnect(force=True)
         await self.ensure_connected()
-        await ctx.send(f'Reconnected to **{channel.name}** and restarted the radio stream.')
+        await interaction.followup.send(
+            f"Reconnected to **{channel.name}** and restarted the radio stream."
+        )
 
-    @commands.command(name='help')
-    async def help_command(self, ctx: commands.Context) -> None:
-        await ctx.send('Radio commands: .nowplaying (.np), .status, .reconnect (Manage Server), .help')
+    async def help_slash(self, interaction: discord.Interaction) -> None:
+        await interaction.response.send_message(
+            "**Radio slash commands**\n"
+            "`/nowplaying` — Show the current song.\n"
+            "`/status` — Check voice connection and stream playback.\n"
+            "`/reconnect` — Reconnect the bot (Manage Server permission required).\n"
+            "`/help` — Show this command list."
+        )
 
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send('You need Manage Server permission to use that command.')
-        elif not isinstance(error, commands.CommandNotFound):
-            log.error('[%s] Command error: %s', self.bot_name, error)
-            await ctx.send('The command failed. Check the bot logs.')
+    async def on_app_command_error(
+        self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
+    ) -> None:
+        if isinstance(error, discord.app_commands.MissingPermissions):
+            message = "You need Manage Server permission to use `/reconnect`."
+        else:
+            log.error("[%s] Slash command error: %s", self.bot_name, error)
+            message = "The command failed. Check the bot logs."
+        if interaction.response.is_done():
+            await interaction.followup.send(message, ephemeral=True)
+        else:
+            await interaction.response.send_message(message, ephemeral=True)
     async def on_ready(self) -> None:
         log.info("[%s] Logged in as %s", self.bot_name, self.user)
 
@@ -251,7 +283,6 @@ async def main() -> None:
             )
 
     intents = discord.Intents.default()
-    intents.message_content = True
     await asyncio.gather(*(run_bot(config, intents) for config in configs))
 
 
