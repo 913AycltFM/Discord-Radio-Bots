@@ -31,7 +31,7 @@ In the [Discord Developer Portal](https://discord.com/developers/applications), 
 For each bot:
 
 1. Open **Bot** and generate/reset its token. Store the token privately.
-2. Under **OAuth2 → URL Generator**, select the `bot` scope.
+2. Under **OAuth2 → URL Generator**, select both the `bot` and `applications.commands` scopes so Discord can install the slash commands.
 3. Grant the permissions it needs: **View Channels**, **Connect**, **Speak**, and **Manage Channels**. Manage Channels is needed to change the voice-channel status; use the least permissions that work in your server.
 5. Open the generated invite URL and add the bot to your Discord server.
 
