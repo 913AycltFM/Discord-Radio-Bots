@@ -97,7 +97,7 @@ nano bots.json
 
 When Nano opens, copy the configuration structure from the public [`bots.json`](https://github.com/913AycltFM/Discord-Radio-Bots/blob/main/bots.json) template and paste it into `bots.json`. Then replace the example bot tokens and channel IDs with your real values. Save with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**.
 
-In `bots.private.json`, replace each example bot token and channel ID with your real values:
+In `bots.json`, replace each example bot token and channel ID with your real values:
 
 | Configuration entry | What to enter |
 | --- | --- |
