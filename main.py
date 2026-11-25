@@ -61,20 +61,28 @@ class RadioBot(commands.Bot):
         reconnect_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
         self.tree.add_command(reconnect_command)
         self.tree.add_command(discord.app_commands.Command(name='help', description='Show the available radio commands.', callback=self.help_slash))
+        self.tree.add_command(discord.app_commands.Command(name='play', description='Start or resume the radio stream.', callback=self.play_slash))
+        self.tree.add_command(discord.app_commands.Command(name='pause', description='Pause the radio stream without leaving the voice channel.', callback=self.pause_slash))
+        self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 100 percent.', callback=self.volume_slash))
+        self.tree.add_command(discord.app_commands.Command(name='ping', description='Show the bot response latency.', callback=self.ping_slash))
         self.bot_name = name
         self.channel_id = channel_id
         self.stream_url = stream_url
         self.nowplaying_url = nowplaying_url
         self.fallback_status = fallback_status
         self.current_title: str | None = None
+        self.volume = 1.0
+        self.user_paused = False
         self.metadata_task: asyncio.Task | None = None
         self.connection_task: asyncio.Task | None = None
 
     def start_stream(self, voice_client: discord.VoiceClient) -> None:
-        if not voice_client.is_connected() or voice_client.is_playing():
+        if (not voice_client.is_connected() or voice_client.is_playing()
+                or voice_client.is_paused() or self.user_paused):
             return
 
-        source = discord.FFmpegOpusAudio(self.stream_url, **FFMPEG_OPTIONS)
+        pcm_source = discord.FFmpegPCMAudio(self.stream_url, **FFMPEG_OPTIONS)
+        source = discord.PCMVolumeTransformer(pcm_source, volume=self.volume)
 
         def after_playback(error: Exception | None) -> None:
             if error:
@@ -89,7 +97,8 @@ class RadioBot(commands.Bot):
 
     async def restart_stream(self, voice_client: discord.VoiceClient) -> None:
         await asyncio.sleep(3)
-        if voice_client.is_connected() and not voice_client.is_playing():
+        if (voice_client.is_connected() and not voice_client.is_playing()
+                and not voice_client.is_paused() and not self.user_paused):
             try:
                 self.start_stream(voice_client)
             except Exception:
@@ -156,7 +165,8 @@ class RadioBot(commands.Bot):
                 )
                 log.info("[%s] Connected to %s", self.bot_name, channel.name)
 
-            self.start_stream(voice_client)
+            if not self.user_paused:
+                self.start_stream(voice_client)
         except discord.DiscordException:
             log.exception("[%s] Voice connection failed", self.bot_name)
 
@@ -209,13 +219,59 @@ class RadioBot(commands.Bot):
             f"Reconnected to **{channel.name}** and restarted the radio stream."
         )
 
+    async def play_slash(self, interaction: discord.Interaction) -> None:
+        self.user_paused = False
+        channel = self.get_channel(self.channel_id)
+        if not isinstance(channel, discord.VoiceChannel):
+            await interaction.response.send_message("I cannot find my configured voice channel.", ephemeral=True)
+            return
+        voice = discord.utils.get(self.voice_clients, guild=channel.guild)
+        if voice and voice.is_connected() and voice.is_paused():
+            voice.resume()
+            result = "Resumed the radio stream."
+        else:
+            await self.ensure_connected()
+            result = "Started the radio stream."
+        await interaction.response.send_message(result)
+
+    async def pause_slash(self, interaction: discord.Interaction) -> None:
+        channel = self.get_channel(self.channel_id)
+        voice = (discord.utils.get(self.voice_clients, guild=channel.guild)
+                 if isinstance(channel, discord.VoiceChannel) else None)
+        if not voice or not voice.is_connected() or not voice.is_playing():
+            await interaction.response.send_message("The radio stream is not currently playing.", ephemeral=True)
+            return
+        self.user_paused = True
+        voice.pause()
+        await interaction.response.send_message("Paused the radio stream. I will stay in the voice channel.")
+
+    async def volume_slash(self, interaction: discord.Interaction, volume: int) -> None:
+        if not 0 <= volume <= 100:
+            await interaction.response.send_message("Choose a volume from 0 to 100.", ephemeral=True)
+            return
+        self.volume = volume / 100
+        channel = self.get_channel(self.channel_id)
+        voice = (discord.utils.get(self.voice_clients, guild=channel.guild)
+                 if isinstance(channel, discord.VoiceChannel) else None)
+        if voice and isinstance(voice.source, discord.PCMVolumeTransformer):
+            voice.source.volume = self.volume
+        await interaction.response.send_message(f"Radio volume set to **{volume}%**.")
+
+    async def ping_slash(self, interaction: discord.Interaction) -> None:
+        latency_ms = round(self.latency * 1000)
+        await interaction.response.send_message(f"Pong! Gateway latency: **{latency_ms} ms**.")
+
     async def help_slash(self, interaction: discord.Interaction) -> None:
         await interaction.response.send_message(
             "**Radio slash commands**\n"
             "`/nowplaying` — Show the current song.\n"
             "`/status` — Check voice connection and stream playback.\n"
             "`/reconnect` — Reconnect the bot (Manage Server permission required).\n"
-            "`/help` — Show this command list."
+            "`/help` — Show this command list.\n"
+            "`/play` — Start or resume the stream.\n"
+            "`/pause` — Pause audio but stay in the voice channel.\n"
+            "`/volume` — Set volume from 0–100%.\n"
+            "`/ping` — Show bot latency."
         )
 
     async def on_app_command_error(
