@@ -88,13 +88,14 @@ The repository is cloned directly into `~/discord-radio`, so no extra folder cre
 
 ## 4. Configure the four bots
 
-Create your private configuration file from the public template:
+Create your private configuration file:
 
 ```bash
 cd ~/discord-radio
-cp bots.json bots.private.json
 nano bots.private.json
 ```
+
+When Nano opens, copy the configuration structure from the public [`bots.json`](https://github.com/913AycltFM/Discord-Radio-Bots/blob/main/bots.json) template and paste it into `bots.private.json`. Then replace the example bot tokens and channel IDs with your real values. Save with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**.
 
 In `bots.private.json`, replace each example bot token and channel ID with your real values:
 
