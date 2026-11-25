@@ -10,7 +10,7 @@ Designed for **Raspberry Pi 5 (16 GB RAM) running Ubuntu Server 24.04**.
 - Live audio from AzuraCast using FFmpeg.
 - Now-playing metadata from the AzuraCast `/api/nowplaying/{station_shortcode}` endpoint.
 - Updates the bot's Listening activity and the voice-channel status when the track changes.
-- Dot commands: `.nowplaying` / `.np`, `.status`, `.reconnect`, and `.help`.
+- Discord slash commands: `/nowplaying`, `/status`, `/reconnect`, and `/help`.
 - A background supervisor checks voice connectivity every 15 seconds and reconnects/restarts playback after a disconnect or stream failure.
 - systemd service for automatic startup and restart.
 
@@ -31,9 +31,8 @@ In the [Discord Developer Portal](https://discord.com/developers/applications), 
 For each bot:
 
 1. Open **Bot** and generate/reset its token. Store the token privately.
-2. Under **Privileged Gateway Intents**, enable **Message Content Intent** so dot commands can read messages.
-3. Under **OAuth2 → URL Generator**, select the `bot` scope.
-4. Grant the permissions it needs: **View Channels**, **Connect**, **Speak**, and **Manage Channels**. Manage Channels is needed to change the voice-channel status; use the least permissions that work in your server.
+2. Under **OAuth2 → URL Generator**, select the `bot` scope.
+3. Grant the permissions it needs: **View Channels**, **Connect**, **Speak**, and **Manage Channels**. Manage Channels is needed to change the voice-channel status; use the least permissions that work in your server.
 5. Open the generated invite URL and add the bot to your Discord server.
 
 Keep each bot token private. Never put a real token in a README, issue, screenshot, or committed file.
@@ -142,7 +141,7 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Confirm that all four bots log in, join their assigned voice channels, play their assigned streams, and update their Listening activity/channel status. Test `.nowplaying`, `.status`, and `.help` in a server text channel. A server manager can also test `.reconnect`. Stop the test with **Ctrl+C**.
+Confirm that all four bots log in, join their assigned voice channels, play their assigned streams, and update their Listening activity/channel status. In a server text channel, type `/` and select `/nowplaying`, `/status`, or `/help` from the Discord command picker. A member with Manage Server permission can also run `/reconnect`. The bots sync their slash commands with Discord when they start; global command updates can take a little time to appear. Stop the test with **Ctrl+C**.
 
 If a bot cannot update the voice-channel status, check that it has Manage Channels permission in that server. If it cannot join or play audio, check View Channel, Connect, Speak, the channel ID, the stream URL, and FFmpeg installation.
 
@@ -213,6 +212,6 @@ sudo systemctl start discord-radio.service
 - The stream URLs must be direct AzuraCast listener URLs, not just the AzuraCast website homepage.
 - The bot checks now-playing metadata every 10 seconds. Change `POLL_SECONDS` in `main.py` to adjust this interval.
 - The bots are designed to remain in their voice channels continuously while the service, network, and Discord are available. The supervisor retries every 15 seconds; systemd restarts the service after process failure.
-- Dot commands require **Message Content Intent** to be enabled for each bot in the Discord Developer Portal.
-- `.reconnect` is restricted to members with Manage Server permission.
+- Slash commands are registered with Discord when each bot starts. Restart the service if you change the command definitions.
+- `/reconnect` is restricted to members with Manage Server permission. Message Content Intent is not required for these slash commands.
 - This project does not configure Discord applications or create voice channels automatically; those steps are completed in Discord.
