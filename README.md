@@ -78,7 +78,7 @@ For each entry, fill in:
 - `nowplaying_url`: the matching AzuraCast now-playing API URL.
 - `status_text`: fallback text shown when the API has no current track.
 
-The example includes the known 91.3 Ayclt FM station URL. Replace the other three example stations with the correct station shortcodes and listener URLs. Confirm each stream URL plays in a browser or media player before running the bots.
+The example is configured for 91.3 Ayclt FM, HD2, HD3, and HD4 using the matching station shortcode pattern. Confirm that the HD4 shortcode `91.3_ayclt_fm_hd4` is the actual AzuraCast station shortcode on your server, and verify each listener URL in a browser or media player before running the bots.
 
 Secure the token file:
 
