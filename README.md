@@ -19,7 +19,7 @@ Designed for **Raspberry Pi 5 (16 GB RAM) running Ubuntu Server 24.04**.
 | File | Purpose |
 | --- | --- |
 | `main.py` | Runs all four bots concurrently |
-| `bots.json` (public template; placeholders only) | Safe configuration template; contains no real tokens |
+| `bots.json` | Public configuration template with placeholder tokens and channel IDs |
 | `requirements.txt` | Python dependencies |
 | `.gitignore` | Excludes tokens, local config, and virtual environments |
 | `systemd/discord-radio.service.example` | Example systemd unit |
@@ -84,7 +84,7 @@ python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ```
 
-If you cloned the repository somewhere else, adjust the copy command or use that checkout directory as your working directory.
+The repository is cloned directly into `~/discord-radio`, so no extra folder creation or file-copy step is needed.
 
 ## 4. Configure the four bots
 
@@ -130,7 +130,7 @@ Secure the token file:
 chmod 600 ~/discord-radio/bots.private.json
 ```
 
-The `.gitignore` excludes `bots.json`; do not force-add it to Git. **Do not upload your real bot tokens or private configuration file to the public GitHub repository.** The public `bots.json` (public template; placeholders only) is only a template.
+The `.gitignore` excludes `bots.private.json`. Keep your real bot tokens in that private file only. **Never upload `bots.private.json` or real Discord tokens to the public GitHub repository.** The committed `bots.json` contains placeholders only.
 
 ## 5. Test manually
 
