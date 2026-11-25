@@ -35,11 +35,41 @@ For each bot:
 3. Under **OAuth2 → URL Generator**, select the `bot` scope.
 4. Grant the permissions it needs: **View Channels**, **Connect**, **Speak**, and **Manage Channels**. Manage Channels is needed to change the voice-channel status; use the least permissions that work in your server.
 5. Open the generated invite URL and add the bot to your Discord server.
-6. Enable Developer Mode in Discord, then right-click the assigned voice channel and copy its channel ID.
 
 Keep each bot token private. Never put a real token in a README, issue, screenshot, or committed file.
 
-## 2. Install on Ubuntu Server 24.04
+## 2. Get the four Discord voice channel IDs
+
+Each bot needs the ID of the voice channel it should join. You must copy the ID for each of your four voice channels separately.
+
+### Enable Developer Mode
+
+**On desktop:**
+
+1. Open Discord.
+2. Click the **User Settings** gear near your username.
+3. Select **Advanced**.
+4. Turn on **Developer Mode**.
+
+**On Android or iPhone:**
+
+1. Open the Discord app.
+2. Tap your profile/avatar to open **You** or **User Settings**.
+3. Open **Advanced**.
+4. Turn on **Developer Mode**.
+
+### Copy each voice channel ID
+
+1. Return to your Discord server.
+2. Find the voice channel for the **91.3 Ayclt FM** bot.
+3. **Desktop:** right-click the voice channel name and select **Copy Channel ID**.
+4. **Mobile:** long-press the voice channel name and select **Copy Channel ID**. Depending on your Discord app version, you may need to open the channel's options menu first.
+5. Paste the copied ID temporarily into a private note.
+6. Repeat for the HD2, HD3, and HD4 voice channels.
+
+You should now have four different channel IDs. Do not copy a server ID or a text-channel ID; each value must belong to the voice channel assigned to that bot.
+
+## 3. Install on Ubuntu Server 24.04
 
 SSH into the Raspberry Pi and run:
 
@@ -59,7 +89,7 @@ python3 -m venv venv
 
 If you cloned the repository somewhere else, adjust the copy command or use that checkout directory as your working directory.
 
-## 3. Configure the four bots
+## 4. Configure the four bots
 
 Create your private configuration file:
 
@@ -69,9 +99,24 @@ cp bots.example.json bots.json
 nano bots.json
 ```
 
-For each entry, fill in:
+In `bots.json`, replace each example bot token and channel ID with your real values:
 
-- `name`: a label for the bot.
+| Configuration entry | What to enter |
+| --- | --- |
+| First bot | 91.3 Ayclt FM bot token and main station voice channel ID |
+| Second bot | HD2 bot token and HD2 voice channel ID |
+| Third bot | HD3 bot token and HD3 voice channel ID |
+| Fourth bot | HD4 bot token and HD4 voice channel ID |
+
+The `channel_id` value must be the numeric ID you copied in Step 2. Keep it as a number, without quotation marks. For example:
+
+```json
+"channel_id": 123456789012345678
+```
+
+For each entry, check these fields:
+
+- `name`: the bot's station label.
 - `token`: that bot's Discord token.
 - `channel_id`: the numeric ID of the voice channel it should join.
 - `stream_url`: the direct AzuraCast listener URL for that station.
@@ -80,15 +125,17 @@ For each entry, fill in:
 
 The example is configured for 91.3 Ayclt FM, HD2, HD3, and HD4 using the matching station shortcode pattern. Confirm that the HD4 shortcode `91.3_ayclt_fm_hd4` is the actual AzuraCast station shortcode on your server, and verify each listener URL in a browser or media player before running the bots.
 
+Save and exit Nano with **Ctrl+O**, press **Enter**, then **Ctrl+X**.
+
 Secure the token file:
 
 ```bash
 chmod 600 ~/discord-radio/bots.json
 ```
 
-The `.gitignore` excludes `bots.json`; do not force-add it to Git.
+The `.gitignore` excludes `bots.json`; do not force-add it to Git. **Do not upload your real bot tokens or private configuration file to the public GitHub repository.** The public `bots.example.json` is only a template.
 
-## 4. Test manually
+## 5. Test manually
 
 ```bash
 cd ~/discord-radio
@@ -99,7 +146,7 @@ Confirm that all four bots log in, join their assigned voice channels, play thei
 
 If a bot cannot update the voice-channel status, check that it has Manage Channels permission in that server. If it cannot join or play audio, check View Channel, Connect, Speak, the channel ID, the stream URL, and FFmpeg installation.
 
-## 5. Install the systemd service
+## 6. Install the systemd service
 
 Use the current Linux username and home directory to create the service. Run this command from your SSH session:
 
@@ -126,7 +173,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now discord-radio.service
 ```
 
-## 6. Service commands
+## 7. Service commands
 
 View status:
 
