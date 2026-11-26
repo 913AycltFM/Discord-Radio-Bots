@@ -11,7 +11,8 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 - Play direct AzuraCast or other compatible HTTP audio stream URLs through FFmpeg.
 - Read now-playing information from an AzuraCast-compatible JSON API.
 - Update the bot's Listening activity and voice-channel status when the track changes.
-- Slash commands: `/nowplaying`, `/status`, `/reconnect`, `/help`, `/play`, `/pause`, `/volume`, and `/ping`.
+- Support for the same bot to play in multiple Discord servers at the same time, with independent voice connections and per-server playback controls.
+- Slash commands: `/join`, `/leave`, `/nowplaying`, `/status`, `/reconnect`, `/help`, `/play`, `/pause`, `/volume`, and `/ping`.
 - Automatically supervise voice connections and restart playback after disconnects or stream failures.
 - Run continuously with systemd and start automatically after reboot.
 
@@ -19,7 +20,7 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 
 ## How it works
 
-Each object in `bots.json` starts one independent Discord bot. A bot joins the configured voice channel, plays its configured stream URL, and checks its now-playing API URL.
+Each object in `bots.json` starts one independent Discord bot. It automatically joins the configured voice channel in its home server. The same bot can also be invited to other Discord servers; in each additional server, a member joins a voice channel and runs `/join`. Every server gets its own voice connection and independent pause, volume, and leave controls while playing the same configured station stream.
 
 You can configure different stations from the same radio host or stations from different providers. The application does not require AzuraCast specifically for audio playback; the stream URL must be directly playable by FFmpeg. The now-playing endpoint must return the AzuraCast-compatible JSON structure used by this project.
 
@@ -175,8 +176,10 @@ cd ~/discord-radio
 
 Check the terminal for each bot logging in, connecting to its configured voice channel, and starting playback. Test the slash commands in Discord:
 
+- `/join` — join the voice channel you are currently in and start the configured radio stream. Use this in each additional server.
+- `/leave` — leave the voice channel in this server (Manage Server permission required).
 - `/nowplaying` — show the current track.
-- `/status` — check voice connection and playback.
+- `/status` — check this server's voice connection and playback.
 - `/reconnect` — reconnect the bot (Manage Server permission required).
 - `/help` — list available commands.
 - `/play` — start or resume playback.
@@ -230,7 +233,7 @@ sudo systemctl start discord-radio.service
 ## Troubleshooting
 
 - **Bot does not log in:** check its token and confirm the bot has been added to your server.
-- **Bot cannot find its channel:** verify `channel_id` is the numeric ID of a voice channel in the server.
+- **Bot cannot find its configured channel:** verify `channel_id` is the numeric ID of a voice channel in its home server. In any additional server, join a voice channel and run `/join`.
 - **Bot joins but has no audio:** verify Connect and Speak permissions, confirm the stream URL is directly playable, and check that FFmpeg is installed.
 - **Now-playing does not update:** verify the API URL is reachable and returns an AzuraCast-compatible `now_playing.song` object.
 - **Voice-channel status does not update:** grant Manage Channels permission. Audio playback can work without this permission.
