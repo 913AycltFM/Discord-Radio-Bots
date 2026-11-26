@@ -84,7 +84,16 @@ Supported distributions: Ubuntu, Debian, and Raspberry Pi OS. Python 3.10 or new
 
 ## 4. Configure your station bot(s)
 
-Copy the example configuration to a private local file:
+**Recommended: use the interactive configuration wizard.** It hides Discord tokens while you type, validates channel IDs and HTTP(S) URLs, preserves existing bot entries, creates a backup before saving, and restricts `bots.json` to owner-only access:
+
+```bash
+cd ~/discord-radio
+./venv/bin/python configure.py
+```
+
+Follow the prompts for each station. Choose whether to add another bot when asked. The wizard does not start the service; review your setup first, then start it using the commands below.
+
+You can also edit the configuration manually if you prefer. Copy the example configuration to a private local file:
 
 ```bash
 cd ~/discord-radio
