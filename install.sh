@@ -36,17 +36,11 @@ esac
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${SCRIPT_DIR}/venv"
 CONFIG_FILE="${SCRIPT_DIR}/bots.json"
-EXAMPLE_FILE="${SCRIPT_DIR}/bots.example.json"
 SERVICE_FILE="/etc/systemd/system/discord-radio.service"
 SERVICE_NAME="discord-radio.service"
 
 if [[ ! -f "${SCRIPT_DIR}/main.py" || ! -f "${SCRIPT_DIR}/requirements.txt" ]]; then
     echo "Run this script from a valid Discord Radio Bots project checkout."
-    exit 1
-fi
-
-if [[ ! -f "${EXAMPLE_FILE}" ]]; then
-    echo "Missing bots.example.json. Update your project checkout and try again."
     exit 1
 fi
 
@@ -72,13 +66,13 @@ echo "Installing Python dependencies..."
 "${VENV_DIR}/bin/python" -m pip install -r "${SCRIPT_DIR}/requirements.txt"
 
 if [[ ! -f "${CONFIG_FILE}" ]]; then
-    cp "${EXAMPLE_FILE}" "${CONFIG_FILE}"
-    chmod 600 "${CONFIG_FILE}"
-    echo "Created private configuration: ${CONFIG_FILE}"
-else
-    chmod 600 "${CONFIG_FILE}"
-    echo "Existing bots.json found; it was preserved."
+    echo "Missing bots.json template. Update your project checkout and try again."
+    exit 1
 fi
+
+chmod 600 "${CONFIG_FILE}"
+echo "Installed bots.json starter template with owner-only permissions."
+echo "Run the configuration wizard before starting the service."
 
 echo "Installing systemd service..."
 sudo tee "${SERVICE_FILE}" >/dev/null <<EOF
