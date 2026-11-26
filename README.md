@@ -64,19 +64,23 @@ Use the voice-channel ID, not the server ID or a text-channel ID. Repeat for eac
 
 ## 3. Install the project
 
-On Ubuntu Server or another Debian-based Linux system:
+On Ubuntu Server, Debian, or Raspberry Pi OS, install Git and clone the project:
 
 ```bash
 sudo apt update
-sudo apt install -y ffmpeg libopus0 python3-venv python3-dev build-essential git
+sudo apt install -y git
 
 git clone https://github.com/913AycltFM/Discord-Radio-Bots.git ~/discord-radio
 cd ~/discord-radio
-
-python3 -m venv venv
-./venv/bin/pip install --upgrade pip
-./venv/bin/pip install -r requirements.txt
+chmod +x install.sh
+./install.sh
 ```
+
+The installer installs FFmpeg and required system packages, creates the Python virtual environment, installs Python dependencies, copies `bots.example.json` to your private `bots.json` if one does not already exist, and installs the systemd service.
+
+**The installer does not start the service.** Configure your private `bots.json` first using the next section, then enable and start the service. This prevents the example placeholder token from being used.
+
+Supported distributions: Ubuntu, Debian, and Raspberry Pi OS. Python 3.10 or newer is required.
 
 ## 4. Configure your station bot(s)
 
@@ -84,7 +88,6 @@ Copy the example configuration to a private local file:
 
 ```bash
 cd ~/discord-radio
-cp bots.example.json bots.json
 nano bots.json
 ```
 
@@ -144,6 +147,13 @@ chmod 600 ~/discord-radio/bots.json
 ```
 
 **Important:** `bots.json` contains live credentials and is excluded from Git by `.gitignore`. Do not force-add it or commit real tokens. Keep `bots.example.json` as the public placeholder template.
+
+After saving the configuration, start the service installed by `install.sh`:
+
+```bash
+sudo systemctl enable --now discord-radio.service
+sudo systemctl status discord-radio.service --no-pager
+```
 
 ## 5. Test the bots
 
