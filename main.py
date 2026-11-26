@@ -51,7 +51,7 @@ async def fetch_now_playing(
             return f"{artist} - {title}"
         return title or song.get("text") or None
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError, TypeError) as exc:
-        log.warning("Now-playing request failed for %s: %s", api_url, exc)
+        log.warning("Now-playing request failed (%s)", type(exc).__name__)
         return None
 
 
@@ -105,7 +105,7 @@ class RadioBot(commands.Bot):
                 )
 
         voice_client.play(source, after=after_playback)
-        log.info("[%s] Streaming %s", self.bot_name, self.stream_url)
+        log.info("[%s] Radio stream playback started", self.bot_name)
 
     async def restart_stream(self, voice_client: discord.VoiceClient) -> None:
         await asyncio.sleep(3)
@@ -339,15 +339,35 @@ async def main() -> None:
     with CONFIG_FILE.open("r", encoding="utf-8") as config_file:
         configs = json.load(config_file)
 
-    if not isinstance(configs, list) or len(configs) != 4:
-        raise SystemExit("bots.json must contain a JSON array with exactly four bots.")
+    if not isinstance(configs, list) or not configs:
+        raise SystemExit("bots.json must contain a JSON array with at least one bot.")
 
     required = {"name", "token", "channel_id", "stream_url", "nowplaying_url"}
     for index, config in enumerate(configs, start=1):
+        if not isinstance(config, dict):
+            raise SystemExit(f"Bot entry {index} must be a JSON object.")
+
         missing = required - config.keys()
         if missing:
             raise SystemExit(
                 f"Bot entry {index} is missing: {', '.join(sorted(missing))}"
+            )
+
+        for field in ("name", "token", "stream_url", "nowplaying_url"):
+            if not isinstance(config[field], str) or not config[field].strip():
+                raise SystemExit(
+                    f"Bot entry {index} field '{field}' must be a non-empty string."
+                )
+
+        try:
+            channel_id = int(config["channel_id"])
+        except (TypeError, ValueError):
+            raise SystemExit(
+                f"Bot entry {index} field 'channel_id' must be a numeric Discord voice-channel ID."
+            )
+        if channel_id <= 0:
+            raise SystemExit(
+                f"Bot entry {index} field 'channel_id' must be greater than zero."
             )
 
     intents = discord.Intents.default()
