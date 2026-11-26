@@ -177,31 +177,13 @@ Check the terminal for each bot logging in, connecting to its configured voice c
 
 Stop the manual test with **Ctrl+C** before installing the system service.
 
-## 6. Run continuously with systemd
+## 6. Start the systemd service
 
-Create the service using your current Linux username and home directory:
+The installer has already created the systemd unit. After you have configured and manually tested your bots, enable the service and start it:
 
 ```bash
-sudo tee /etc/systemd/system/discord-radio.service > /dev/null <<EOF
-[Unit]
-Description=Discord Radio Bots
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$HOME/discord-radio
-ExecStart=$HOME/discord-radio/venv/bin/python $HOME/discord-radio/main.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
 sudo systemctl enable --now discord-radio.service
+sudo systemctl status discord-radio.service --no-pager
 ```
 
 ## 7. Service commands
