@@ -33,8 +33,8 @@
   },
   {
     "name": "Gaming Central Radio",
-    "token": "PASTE_DISCORD_BOT_TOKEN_4",
-    "channel_id": 444444444444444444,
+    "token": "PASTE_DISCORD_BOT_TOKEN_5",
+    "channel_id": 555555555555555555,
     "stream_url": "https://radio.913aycltfm.com/listen/gaming_central_radio/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/gaming_central_radio",
     "status_text": "Your game, our community. Gaming Central, for gamers and music together! ❤️🎮"
