@@ -76,7 +76,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-The installer installs FFmpeg and required system packages, creates the Python virtual environment, installs Python dependencies, copies `bots.example.json` to your private `bots.json` if one does not already exist, and installs the systemd service.
+The installer installs FFmpeg and required system packages, creates the Python virtual environment, installs Python dependencies, sets local permissions on the public placeholder `bots.json`, and installs the systemd service.
 
 **The installer does not start the service.** Configure your private `bots.json` first using the next section, then enable and start the service. This prevents the example placeholder token from being used.
 
@@ -93,14 +93,14 @@ cd ~/discord-radio
 
 Follow the prompts for each station. Choose whether to add another bot when asked. The wizard does not start the service; review your setup first, then start it using the commands below.
 
-You can also edit the configuration manually if you prefer. Copy the example configuration to a private local file:
+You can also edit the configuration manually if you prefer. Edit the starter configuration manually if you prefer:
 
 ```bash
 cd ~/discord-radio
 nano bots.json
 ```
 
-The example contains one placeholder bot. Replace its values with your own:
+The repository includes a public `bots.json` starter template containing fake placeholder values. Run the wizard to replace those placeholders with your private station configuration:
 
 | Field | Value |
 | --- | --- |
@@ -155,7 +155,7 @@ Save Nano with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**. Protect t
 chmod 600 ~/discord-radio/bots.json
 ```
 
-**Important:** `bots.json` contains live credentials and is excluded from Git by `.gitignore`. Do not force-add it or commit real tokens. Keep `bots.example.json` as the public placeholder template.
+**Important:** The repository’s committed `bots.json` contains placeholders only. The configuration wizard replaces it locally with your real credentials and sets permissions to `600`. Never commit your edited local `bots.json`, and never publish real tokens. The repository’s `.gitignore` prevents accidental local changes from being staged.
 
 After saving the configuration, start the service installed by `install.sh`:
 
