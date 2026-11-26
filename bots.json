@@ -30,5 +30,13 @@
     "stream_url": "https://radio.913aycltfm.com/listen/91.3_ayclt_fm_hd4/discord",
     "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/91.3_ayclt_fm_hd4",
     "status_text": "La Marque Texas #1 Hit Music Station"
+  },
+  {
+    "name": "Gaming Central Radio",
+    "token": "PASTE_DISCORD_BOT_TOKEN_4",
+    "channel_id": 444444444444444444,
+    "stream_url": "https://radio.913aycltfm.com/listen/gaming_central_radio/discord",
+    "nowplaying_url": "https://radio.913aycltfm.com/api/nowplaying/gaming_central_radio",
+    "status_text": "La Marque Texas #1 Hit Music Station"
   }
 ]
