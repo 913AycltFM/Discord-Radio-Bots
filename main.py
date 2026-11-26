@@ -90,6 +90,7 @@ class RadioBot(commands.Bot):
         self.guild_volumes: dict[int, float] = {}
         self.guild_paused: dict[int, bool] = {}
         self.guild_channel_ids: dict[int, int] = {}
+        self.guild_opted_out: set[int] = set()
         self.metadata_task: asyncio.Task | None = None
         self.connection_task: asyncio.Task | None = None
 
@@ -182,6 +183,9 @@ class RadioBot(commands.Bot):
                 channel_ids = set(self.guild_channel_ids.values())
                 channel_ids.add(self.channel_id)
                 for channel_id in channel_ids:
+                    channel = self.get_channel(channel_id)
+                    if isinstance(channel, discord.VoiceChannel) and channel.guild.id in self.guild_opted_out:
+                        continue
                     await self.ensure_connected(channel_id)
             except Exception:
                 log.exception('[%s] Voice connection check failed', self.bot_name)
@@ -217,6 +221,7 @@ class RadioBot(commands.Bot):
             await interaction.response.send_message("Join a voice channel first, then use `/join`.", ephemeral=True)
             return
         channel = interaction.user.voice.channel
+        self.guild_opted_out.discard(interaction.guild.id)
         self.guild_channel_ids[interaction.guild.id] = channel.id
         self.guild_paused[interaction.guild.id] = False
         await interaction.response.defer(ephemeral=True)
@@ -231,6 +236,7 @@ class RadioBot(commands.Bot):
         if voice and voice.is_connected():
             await voice.disconnect(force=True)
         self.guild_channel_ids.pop(interaction.guild.id, None)
+        self.guild_opted_out.add(interaction.guild.id)
         self.guild_paused.pop(interaction.guild.id, None)
         self.guild_volumes.pop(interaction.guild.id, None)
         await interaction.response.send_message("I left the voice channel in this server.")
