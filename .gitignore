@@ -19,5 +19,5 @@ env/
 .vscode/
 .idea/
 
-# Local bot credentials (copy bots.example.json to bots.json)
+# Ignore local edits to the committed placeholder template so real credentials are not accidentally pushed.
 bots.json
