@@ -66,13 +66,6 @@ def collect_bot(existing_names: set[str]) -> dict:
             break
         print("A real Discord bot token is required.")
 
-    while True:
-        channel_text = ask_required("Discord voice-channel ID: ")
-        if channel_text.isdigit() and int(channel_text) > 0:
-            channel_id = int(channel_text)
-            break
-        print("Enter the numeric ID of a voice channel.")
-
     stream_url = ask_url("Direct radio stream URL: ")
     nowplaying_url = ask_url("Now-playing API URL: ")
     status_text = input(f"Fallback status [{name}]: ").strip() or name
@@ -80,7 +73,6 @@ def collect_bot(existing_names: set[str]) -> dict:
     return {
         "name": name,
         "token": token,
-        "channel_id": channel_id,
         "stream_url": stream_url,
         "nowplaying_url": nowplaying_url,
         "status_text": status_text,
