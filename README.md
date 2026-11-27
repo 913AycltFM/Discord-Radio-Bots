@@ -20,7 +20,7 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 
 ## How it works
 
-Each object in `bots.json` starts one independent public Discord radio bot. It stays disconnected from voice channels after startup. Invite it to any Discord server, join the voice channel where you want the station to play, and run `/join`. The bot can serve multiple Discord servers at the same time, with a separate voice connection and independent pause, volume, and leave controls in each server.
+Each object in `bots.json` starts one independent public Discord radio bot. By default, it stays disconnected from voice channels after startup. Invite it to any Discord server, join the voice channel where you want the station to play, and run `/join`. You can optionally configure a `channel_id` to have the bot automatically join one default voice channel after startup. The bot can serve multiple Discord servers at the same time, with a separate voice connection and independent pause, volume, and leave controls in each server.
 
 You can configure different stations from the same radio host or stations from different providers. The application does not require AzuraCast specifically for audio playback; the stream URL must be directly playable by FFmpeg. The now-playing endpoint must return the AzuraCast-compatible JSON structure used by this project.
 
@@ -54,7 +54,7 @@ Repeat these steps for every station/bot. Never publish bot tokens or paste them
 
 ## 2. Choose where the radio plays
 
-The bot does not have a preset home server or voice channel. After inviting it to a Discord server, join the voice channel where you want the station to play and run `/join`. Each server chooses its own voice channel independently.
+By default, the bot does not have a preset home server or voice channel. After inviting it to a Discord server, join the voice channel where you want the station to play and run `/join`. Each server chooses its own voice channel independently. If you configure the optional `channel_id`, the bot will automatically join that default voice channel after startup.
 
 ## 3. Install the project
 
@@ -169,7 +169,7 @@ You can optionally add a `channel_id` to a bot entry in your private `bots.json`
 }
 ```
 
-Replace the example number with the ID of a voice channel the bot can access. When set, the bot automatically joins that channel after startup. This setting is optional: omit it or leave it blank in the setup wizard to keep the bot disconnected until someone joins a voice channel and runs `/join`. The configured channel must belong to a server where the bot is installed.
+Replace the example number with the ID of a voice channel the bot can access. When set, the bot automatically joins that channel after startup. This setting is optional, so the public `bots.json` starter template does not include a `channel_id` property. Add the property only to your private `bots.json` if you want automatic joining. If you omit it or leave the wizard prompt blank, the bot stays disconnected until someone joins a voice channel and runs `/join`. The configured channel must belong to a server where the bot is installed.
 
 ## 5. Test the bots
 
@@ -180,7 +180,7 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Check the terminal for each bot logging in. Bots remain out of voice until a server member joins a voice channel and runs `/join`. Test the slash commands in Discord:
+Check the terminal for each bot logging in. Bots without a configured `channel_id` remain out of voice until a server member joins a voice channel and runs `/join`. A bot with a configured `channel_id` automatically joins that default channel after startup. Test the slash commands in Discord:
 
 - `/join` — join the voice channel you are currently in and start the configured radio stream. Use this in each additional server.
 - `/leave` — leave the voice channel in this server (Manage Server permission required).
@@ -239,7 +239,7 @@ sudo systemctl start discord-radio.service
 ## Troubleshooting
 
 - **Bot does not log in:** check its token and confirm the bot has been added to your server.
-- **Bot does not join voice:** join a voice channel in the server and run `/join`; confirm the bot has View Channel, Connect, and Speak permissions.
+- **Bot does not join voice:** if no `channel_id` is configured, join a voice channel in the server and run `/join`. If a `channel_id` is configured, verify that it is the correct voice-channel ID and that the bot has View Channel, Connect, and Speak permissions.
 - **Bot joins but has no audio:** verify Connect and Speak permissions, confirm the stream URL is directly playable, and check that FFmpeg is installed.
 - **Now-playing does not update:** verify the API URL is reachable and returns an AzuraCast-compatible `now_playing.song` object.
 - **Voice-channel status does not update:** grant Manage Channels permission. Audio playback can work without this permission.
