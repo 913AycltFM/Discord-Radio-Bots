@@ -13,7 +13,9 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 - Update the bot's Listening activity and voice-channel status when the track changes.
 - Support for the same bot to play in multiple Discord servers at the same time, with independent voice connections and per-server playback controls.
 - Slash commands: `/join`, `/leave`, `/nowplaying`, `/status`, `/reconnect`, `/help`, `/play`, `/pause`, `/volume`, and `/ping`.
-- Automatically supervise voice connections and restart playback after disconnects or stream failures.
+- Automatically supervise voice connections and attempt to restart playback after stream playback ends or fails.
+- `/leave` and `/reconnect` require Manage Server permission; `/leave` immediately acknowledges the interaction and prevents automatic reconnection until `/join` is used again.
+- Per-server `/volume` control from 0% to 200%.
 - Run continuously with systemd and start automatically after reboot.
 
 > Each configured bot needs its own Discord bot application/token. Add only as many bot entries as your host and Discord server can reasonably support.
@@ -173,7 +175,7 @@ Check the terminal for each bot logging in. Bots remain out of voice until a ser
 - `/help` — list available commands.
 - `/play` — start or resume playback.
 - `/pause` — pause audio while remaining in the channel.
-- `/volume` — set volume from 0 to 100 percent.
+- `/volume` — set the per-server volume from 0 to 200 percent. Higher levels may cause distortion depending on the source audio.
 - `/ping` — show Discord gateway latency.
 
 Stop the manual test with **Ctrl+C** before installing the system service.
@@ -195,7 +197,7 @@ From the project directory, run:
 ./update.sh
 ```
 
-The updater fetches the latest `main` branch, installs the Python packages listed in `requirements.txt`, and checks the Python files for syntax errors. It preserves your private `bots.json`. It refuses to proceed if tracked local code changes are present. If the service was already running, it restarts it after a successful update; if it was stopped, it leaves it stopped.
+The updater fetches the latest `main` branch, installs the Python packages listed in `requirements.txt`, and checks the Python files for syntax errors. It refuses to proceed if Git detects tracked local changes. **Important:** `bots.json` is a tracked starter-template file, so editing it with real credentials makes it a tracked local change and the updater will stop rather than update. Before updating, make a secure backup of `bots.json`, restore the repository copy with `git restore bots.json`, run `./update.sh`, then restore your private configuration from the backup and run `chmod 600 bots.json`. Never upload or commit the backup. If the service was already running, the updater restarts it after a successful update; if it was stopped, it leaves it stopped.
 
 ## 7. Service commands
 
