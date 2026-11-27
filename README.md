@@ -7,7 +7,7 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 ## Features
 
 - Configure **one or more radio bots**; there is no fixed four-bot limit in the application.
-- Give each bot its own Discord application, token, voice channel, and radio stream.
+- Give each bot its own Discord application, token, and radio stream.
 - Play direct AzuraCast or other compatible HTTP audio stream URLs through FFmpeg.
 - Read now-playing information from an AzuraCast-compatible JSON API.
 - Update the bot's Listening activity and voice-channel status when the track changes.
@@ -20,7 +20,7 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 
 ## How it works
 
-Each object in `bots.json` starts one independent Discord bot. It automatically joins the configured voice channel in its home server. The same bot can also be invited to other Discord servers; in each additional server, a member joins a voice channel and runs `/join`. Every server gets its own voice connection and independent pause, volume, and leave controls while playing the same configured station stream.
+Each object in `bots.json` starts one independent public Discord radio bot. It stays disconnected from voice channels after startup. Invite it to any Discord server, join the voice channel where you want the station to play, and run `/join`. The bot can serve multiple Discord servers at the same time, with a separate voice connection and independent pause, volume, and leave controls in each server.
 
 You can configure different stations from the same radio host or stations from different providers. The application does not require AzuraCast specifically for audio playback; the stream URL must be directly playable by FFmpeg. The now-playing endpoint must return the AzuraCast-compatible JSON structure used by this project.
 
@@ -52,16 +52,9 @@ For each station you want to broadcast:
 
 Repeat these steps for every station/bot. Never publish bot tokens or paste them into screenshots, issues, or public messages. If a token is exposed, reset it immediately in the Developer Portal.
 
-## 2. Get the Discord voice channel ID
+## 2. Choose where the radio plays
 
-Enable **Developer Mode** in Discord under **User Settings → Advanced**.
-
-Then copy the ID of the voice channel that the bot should join:
-
-- Desktop: right-click the voice channel and choose **Copy Channel ID**.
-- Mobile: long-press the voice channel or open its options menu and choose **Copy Channel ID**.
-
-Use the voice-channel ID, not the server ID or a text-channel ID. Repeat for each bot. Each bot should be assigned to the voice channel where that station should play.
+The bot does not have a preset home server or voice channel. After inviting it to a Discord server, join the voice channel where you want the station to play and run `/join`. Each server chooses its own voice channel independently.
 
 ## 3. Install the project
 
@@ -85,7 +78,7 @@ Supported distributions: Ubuntu, Debian, and Raspberry Pi OS. Python 3.10 or new
 
 ## 4. Configure your station bot(s)
 
-**Recommended: use the interactive configuration wizard.** It hides Discord tokens while you type, validates channel IDs and HTTP(S) URLs, preserves existing bot entries, creates a backup before saving, and restricts `bots.json` to owner-only access:
+**Recommended: use the interactive configuration wizard.** It hides Discord tokens while you type, validates HTTP(S) URLs, preserves existing bot entries, creates a backup before saving, and restricts `bots.json` to owner-only access:
 
 ```bash
 cd ~/discord-radio
@@ -107,7 +100,6 @@ The repository includes a public `bots.json` starter template containing fake pl
 | --- | --- |
 | `name` | A display name for this station/bot |
 | `token` | The bot token from the Discord Developer Portal |
-| `channel_id` | Numeric ID of the Discord voice channel |
 | `stream_url` | Direct audio listener URL for the station |
 | `nowplaying_url` | AzuraCast-compatible now-playing API URL |
 | `status_text` | Optional fallback text when no track metadata is available |
@@ -118,21 +110,19 @@ Example entry:
 {
   "name": "My Radio Station",
   "token": "PASTE_YOUR_DISCORD_BOT_TOKEN",
-  "channel_id": 123456789012345678,
   "stream_url": "https://radio.example.com/listen/station/discord",
   "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
   "status_text": "Live radio"
 }
 ```
 
-To add more stations, copy the complete object, add a comma between objects, and give every bot its own token and voice-channel ID. Keep the whole configuration inside the surrounding JSON array:
+To add more stations, copy the complete object, add a comma between objects, and give every bot its own token and stream/API URLs. Keep the whole configuration inside the surrounding JSON array:
 
 ```json
 [
   {
     "name": "Station One",
     "token": "BOT_TOKEN_ONE",
-    "channel_id": 123456789012345678,
     "stream_url": "https://radio.example.com/listen/one/discord",
     "nowplaying_url": "https://radio.example.com/api/nowplaying/one",
     "status_text": "Station One"
@@ -140,7 +130,6 @@ To add more stations, copy the complete object, add a comma between objects, and
   {
     "name": "Station Two",
     "token": "BOT_TOKEN_TWO",
-    "channel_id": 234567890123456789,
     "stream_url": "https://radio.example.com/listen/two/discord",
     "nowplaying_url": "https://radio.example.com/api/nowplaying/two",
     "status_text": "Station Two"
@@ -174,7 +163,7 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Check the terminal for each bot logging in, connecting to its configured voice channel, and starting playback. Test the slash commands in Discord:
+Check the terminal for each bot logging in. Bots remain out of voice until a server member joins a voice channel and runs `/join`. Test the slash commands in Discord:
 
 - `/join` — join the voice channel you are currently in and start the configured radio stream. Use this in each additional server.
 - `/leave` — leave the voice channel in this server (Manage Server permission required).
@@ -233,7 +222,7 @@ sudo systemctl start discord-radio.service
 ## Troubleshooting
 
 - **Bot does not log in:** check its token and confirm the bot has been added to your server.
-- **Bot cannot find its configured channel:** verify `channel_id` is the numeric ID of a voice channel in its home server. In any additional server, join a voice channel and run `/join`.
+- **Bot does not join voice:** join a voice channel in the server and run `/join`; confirm the bot has View Channel, Connect, and Speak permissions.
 - **Bot joins but has no audio:** verify Connect and Speak permissions, confirm the stream URL is directly playable, and check that FFmpeg is installed.
 - **Now-playing does not update:** verify the API URL is reachable and returns an AzuraCast-compatible `now_playing.song` object.
 - **Voice-channel status does not update:** grant Manage Channels permission. Audio playback can work without this permission.
@@ -243,7 +232,7 @@ sudo systemctl start discord-radio.service
 ## Security
 
 - Never commit `bots.json`, real Discord tokens, or private credentials.
-- Keep the public `bots.example.json` filled only with clearly fake placeholder values.
+- Keep the public `bots.json` filled only with clearly fake placeholder values.
 - Use `chmod 600 bots.json` to restrict local access.
 - Avoid sharing logs that contain private stream URLs or credentials.
 - Grant each bot only the Discord permissions it needs.
