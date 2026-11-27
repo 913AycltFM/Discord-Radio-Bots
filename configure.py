@@ -70,13 +70,26 @@ def collect_bot(existing_names: set[str]) -> dict:
     nowplaying_url = ask_url("Now-playing API URL: ")
     status_text = input(f"Fallback status [{name}]: ").strip() or name
 
-    return {
+    channel_id_text = input(
+        "Optional default Discord voice channel ID (press Enter to skip): "
+    ).strip()
+    if channel_id_text:
+        if not channel_id_text.isdigit() or int(channel_id_text) <= 0:
+            raise SystemExit("Channel ID must be a positive number, or leave it blank.")
+        channel_id = int(channel_id_text)
+    else:
+        channel_id = None
+
+    result = {
         "name": name,
         "token": token,
         "stream_url": stream_url,
         "nowplaying_url": nowplaying_url,
         "status_text": status_text,
     }
+    if channel_id is not None:
+        result["channel_id"] = channel_id
+    return result
 
 
 def save_config(configs: list[dict]) -> None:
