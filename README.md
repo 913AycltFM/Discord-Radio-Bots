@@ -26,7 +26,7 @@ You can configure different stations from the same radio host or stations from d
 
 ## Requirements
 
-- Linux host (Ubuntu Server or Raspberry Pi lite OS recommended)
+- Linux host (Ubuntu Server or Raspberry Pi Lite OS recommended)
 - Python 3.10 or newer
 - FFmpeg
 - libopus
