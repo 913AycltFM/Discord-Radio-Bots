@@ -17,6 +17,14 @@ logging.basicConfig(
 )
 log = logging.getLogger("discord-radio")
 
+async def require_manage_guild(interaction: discord.Interaction) -> bool:
+    return (
+        interaction.guild is not None
+        and isinstance(interaction.user, discord.Member)
+        and interaction.user.guild_permissions.manage_guild
+    )
+
+
 # PCM audio must be encoded with Opus before it can be sent to Discord voice.
 try:
     discord.opus.load_opus("libopus.so.0")
@@ -70,12 +78,12 @@ class RadioBot(commands.Bot):
         self.tree.add_command(discord.app_commands.Command(name='nowplaying', description='Show the currently playing song.', callback=self.nowplaying_slash))
         self.tree.add_command(discord.app_commands.Command(name='status', description='Check this radio bot connection and stream status.', callback=self.status_slash))
         reconnect_command = discord.app_commands.Command(name='reconnect', description='Reconnect this bot to its radio voice channel.', callback=self.reconnect_slash)
-        reconnect_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
+        reconnect_command.add_check(require_manage_guild)
         self.tree.add_command(reconnect_command)
         self.tree.add_command(discord.app_commands.Command(name='help', description='Show the available radio commands.', callback=self.help_slash))
         self.tree.add_command(discord.app_commands.Command(name='join', description='Join your current voice channel and start the radio.', callback=self.join_slash))
         leave_command = discord.app_commands.Command(name='leave', description='Leave the voice channel in this server.', callback=self.leave_slash)
-        leave_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
+        leave_command.add_check(require_manage_guild)
         self.tree.add_command(leave_command)
         self.tree.add_command(discord.app_commands.Command(name='play', description='Start or resume the radio stream in this server.', callback=self.play_slash))
         self.tree.add_command(discord.app_commands.Command(name='pause', description='Pause the radio stream without leaving the voice channel.', callback=self.pause_slash))
@@ -332,7 +340,7 @@ class RadioBot(commands.Bot):
     async def on_app_command_error(
         self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
     ) -> None:
-        if isinstance(error, discord.app_commands.MissingPermissions):
+        if isinstance(error, (discord.app_commands.MissingPermissions, discord.app_commands.CheckFailure)):
             message = "You need Manage Server permission to use `/leave` and `/reconnect`."
         else:
             log.error("[%s] Slash command error: %s", self.bot_name, error)
