@@ -190,7 +190,7 @@ Check the terminal for each bot logging in. Bots without a configured `channel_i
 - `/help` — list available commands.
 - `/play` — start or resume playback.
 - `/pause` — pause audio while remaining in the channel.
-- `/volume` — set volume from 0 to 100 percent.
+- `/volume` — set volume from 0 to 200 percent. Values above 100% amplify the audio and may cause distortion.
 - `/ping` — show Discord gateway latency.
 
 Stop the manual test with **Ctrl+C** before installing the system service.
