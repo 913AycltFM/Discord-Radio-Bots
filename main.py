@@ -231,28 +231,29 @@ class RadioBot(commands.Bot):
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
             return
 
-        # Acknowledge immediately so Discord does not time out while disconnecting.
+        # Acknowledge immediately, then edit the original response when finished.
         await interaction.response.defer(ephemeral=True)
 
         guild_id = interaction.guild.id
-        self.guild_opted_out.add(guild_id)
-        self.guild_channel_ids.pop(guild_id, None)
-        self.guild_paused.pop(guild_id, None)
-        self.guild_volumes.pop(guild_id, None)
+        try:
+            self.guild_opted_out.add(guild_id)
+            self.guild_channel_ids.pop(guild_id, None)
+            self.guild_paused.pop(guild_id, None)
+            self.guild_volumes.pop(guild_id, None)
 
-        voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
-        if voice and voice.is_connected():
-            try:
+            voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
+            if voice and voice.is_connected():
                 await voice.disconnect(force=True)
-            except Exception:
-                log.exception("[%s] Could not leave voice channel in guild %s", self.bot_name, guild_id)
-                await interaction.followup.send(
-                    "I couldn't disconnect from the voice channel. Check the bot logs.",
-                    ephemeral=True,
-                )
-                return
+        except Exception:
+            log.exception("[%s] Could not leave voice channel in guild %s", self.bot_name, guild_id)
+            message = "I couldn't leave the voice channel. Check the bot logs."
+        else:
+            message = "I left the voice channel in this server."
 
-        await interaction.followup.send("I left the voice channel in this server.", ephemeral=True)
+        try:
+            await interaction.edit_original_response(content=message)
+        except discord.HTTPException:
+            log.exception("[%s] Could not send the /leave response in guild %s", self.bot_name, guild_id)
 
     async def reconnect_slash(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:
