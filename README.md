@@ -204,6 +204,17 @@ sudo systemctl enable --now discord-radio.service
 sudo systemctl status discord-radio.service --no-pager
 ```
 
+## Update the bot software
+
+From the project directory, run:
+
+```bash
+cd ~/discord-radio
+bash update.sh
+```
+
+The updater backs up your private local `bots.json`, pulls the latest GitHub changes using a fast-forward-only pull, restores and protects your private configuration, updates Python dependencies, checks Python syntax, and restarts the systemd service. If local code changes conflict with the update, it stops rather than overwriting them.
+
 ## 7. Service commands
 
 Check service status:
