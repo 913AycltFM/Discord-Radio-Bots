@@ -228,14 +228,30 @@ class RadioBot(commands.Bot):
         if interaction.guild is None:
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
             return
-        voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
-        if voice and voice.is_connected():
-            await voice.disconnect(force=True)
-        self.guild_channel_ids.pop(interaction.guild.id, None)
-        self.guild_opted_out.add(interaction.guild.id)
-        self.guild_paused.pop(interaction.guild.id, None)
-        self.guild_volumes.pop(interaction.guild.id, None)
-        await interaction.response.send_message("I left the voice channel in this server.")
+
+        # Acknowledge immediately, then edit the original response when finished.
+        await interaction.response.defer(ephemeral=True)
+
+        guild_id = interaction.guild.id
+        try:
+            self.guild_opted_out.add(guild_id)
+            self.guild_channel_ids.pop(guild_id, None)
+            self.guild_paused.pop(guild_id, None)
+            self.guild_volumes.pop(guild_id, None)
+
+            voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
+            if voice and voice.is_connected():
+                await voice.disconnect(force=True)
+        except Exception:
+            log.exception("[%s] Could not leave voice channel in guild %s", self.bot_name, guild_id)
+            message = "I couldn't leave the voice channel. Check the bot logs."
+        else:
+            message = "I left the voice channel in this server."
+
+        try:
+            await interaction.edit_original_response(content=message)
+        except discord.HTTPException:
+            log.exception("[%s] Could not send the /leave response in guild %s", self.bot_name, guild_id)
 
     async def reconnect_slash(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:
@@ -315,7 +331,7 @@ class RadioBot(commands.Bot):
         self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
     ) -> None:
         if isinstance(error, discord.app_commands.MissingPermissions):
-            message = "You need Manage Server permission to use `/reconnect`."
+            message = "You need Manage Server permission to use this command."
         else:
             log.error("[%s] Slash command error: %s", self.bot_name, error)
             message = "The command failed. Check the bot logs."
