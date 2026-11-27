@@ -162,10 +162,10 @@ You can optionally add a `channel_id` to a bot entry in your private `bots.json`
 {
   "name": "My Radio Station",
   "token": "YOUR_DISCORD_BOT_TOKEN",
-  "channel_id": 123456789012345678
+  "channel_id": 123456789012345678,
   "stream_url": "https://radio.example.com/listen/station/discord",
   "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
-  "status_text": "Live radio",
+  "status_text": "Live radio"
 }
 ```
 
@@ -206,14 +206,26 @@ sudo systemctl status discord-radio.service --no-pager
 
 ## Update the bot software
 
-From the project directory, run:
+After making sure your private configuration is backed up, run the updater from your project checkout:
 
 ```bash
 cd ~/discord-radio
-bash update.sh
+./update.sh
 ```
 
-The updater backs up your private local `bots.json`, pulls the latest GitHub changes using a fast-forward-only pull, restores and protects your private configuration, updates Python dependencies, checks Python syntax, and restarts the systemd service. If local code changes conflict with the update, it stops rather than overwriting them.
+The updater:
+
+1. Makes a private, permission-restricted temporary backup of your local `bots.json`.
+2. Temporarily clears the Git `skip-worktree` protection on the tracked starter file, then restores the public template before pulling.
+3. Pulls the latest `main` branch using `git pull --ff-only`; it will not create a merge commit.
+4. Restores your private `bots.json`, sets its permissions to `600`, and reapplies Git's `skip-worktree` protection.
+5. Installs the Python dependencies listed in `requirements.txt`.
+6. Checks the syntax of `main.py` and `configure.py`.
+7. Restarts `discord-radio.service` and displays its status.
+
+Run this updater from the same project checkout used by the systemd service. It updates the project files in that checkout; it does not migrate the installation to another directory. If the fast-forward-only pull is blocked by local Git changes or a divergent branch, stop and review the Git status rather than forcing the update. Keep your own separate backups of `bots.json`; never commit real tokens or private stream URLs.
+
+The updater is intended for the standard installation created by `install.sh`. It expects the virtual environment at `./venv` and the service name `discord-radio.service`.
 
 ## 7. Service commands
 
