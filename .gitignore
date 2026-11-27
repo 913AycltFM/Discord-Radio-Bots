@@ -1,5 +1,7 @@
 # Secrets and local configuration
 bots.private.json
+bots.json.backup
+bots.*.json.tmp
 # bots.json is a public placeholder template in Git; the wizard replaces it locally.
 
 # Python
