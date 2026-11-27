@@ -154,6 +154,23 @@ sudo systemctl enable --now discord-radio.service
 sudo systemctl status discord-radio.service --no-pager
 ```
 
+### Optional default voice channel
+
+You can optionally add a `channel_id` to a bot entry in your private `bots.json`:
+
+```json
+{
+  "name": "My Radio Station",
+  "token": "YOUR_DISCORD_BOT_TOKEN",
+  "stream_url": "https://radio.example.com/listen/station/discord",
+  "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
+  "status_text": "Live radio",
+  "channel_id": 123456789012345678
+}
+```
+
+Replace the example number with the ID of a voice channel the bot can access. When set, the bot automatically joins that channel after startup. This setting is optional: omit it or leave it blank in the setup wizard to keep the bot disconnected until someone joins a voice channel and runs `/join`. The configured channel must belong to a server where the bot is installed.
+
 ## 5. Test the bots
 
 Run the application manually first:
