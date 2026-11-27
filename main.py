@@ -113,20 +113,18 @@ class RadioBot(commands.Bot):
 
         def after_playback(error: Exception | None) -> None:
             if error:
-                log.error("[%s] Playback error: %s", self.bot_name, error)
-            elif (
-                voice_client.is_connected()
-                and not self.is_closed()
-                and not self.guild_paused.get(guild_id, False)
-            ):
-                log.warning(
-                    "[%s] Audio playback ended unexpectedly in guild %s; scheduling recovery",
-                    self.bot_name,
-                    guild_id,
-                )
+                log.error("[%s] Playback process ended with an error: %s", self.bot_name, error)
+            else:
+                log.warning("[%s] Playback process ended; checking recovery", self.bot_name)
+
             if voice_client.is_connected() and not self.is_closed():
                 asyncio.run_coroutine_threadsafe(
                     self.restart_stream(voice_client), self.loop
+                )
+            else:
+                log.warning(
+                    "[%s] Playback ended while voice was disconnected; connection supervisor will handle recovery",
+                    self.bot_name
                 )
 
         voice_client.play(source, after=after_playback)
@@ -184,45 +182,44 @@ class RadioBot(commands.Bot):
         guild_id = channel.guild.id
         self.guild_channel_ids[guild_id] = channel.id
         voice_client = discord.utils.get(self.voice_clients, guild=channel.guild)
-        was_connected = bool(voice_client and voice_client.is_connected())
 
         try:
-            if was_connected:
+            if voice_client and voice_client.is_connected():
                 if voice_client.channel != channel:
-                    log.warning(
-                        "[%s] Voice connection is in the wrong channel; moving to %s",
-                        self.bot_name,
-                        channel.name,
+                    log.info(
+                        "[%s] Moving voice connection in guild %s to %s",
+                        self.bot_name, guild_id, channel.name
                     )
                     await voice_client.move_to(channel)
-                    log.info("[%s] Moved to %s in guild %s", self.bot_name, channel.name, guild_id)
             else:
-                log.warning(
-                    "[%s] Voice connection is unavailable in guild %s; reconnecting to %s",
-                    self.bot_name,
-                    guild_id,
-                    channel.name,
-                )
+                if voice_client is not None:
+                    log.warning(
+                        "[%s] Voice connection lost in guild %s; reconnecting",
+                        self.bot_name, guild_id
+                    )
+                    await voice_client.disconnect(force=True)
+
                 voice_client = await channel.connect(self_deaf=True, reconnect=True)
-                log.info("[%s] Voice connection restored in guild %s to %s", self.bot_name, guild_id, channel.name)
+                log.info(
+                    "[%s] Connected to %s in guild %s",
+                    self.bot_name, channel.name, guild_id
+                )
 
             if (
-                was_connected
+                voice_client.is_connected()
                 and not voice_client.is_playing()
                 and not voice_client.is_paused()
                 and not self.guild_paused.get(guild_id, False)
             ):
                 log.warning(
-                    "[%s] Voice is connected but playback is stopped in guild %s; restarting the stream",
-                    self.bot_name,
-                    guild_id,
+                    "[%s] Radio playback is not active in guild %s; restarting stream",
+                    self.bot_name, guild_id
                 )
 
             self.start_stream(voice_client)
+
         except discord.DiscordException:
-            log.exception("[%s] Voice connection failed in guild %s", self.bot_name, guild_id)
-        except Exception:
-            log.exception("[%s] Could not verify or start playback in guild %s", self.bot_name, guild_id)
+            log.exception("[%s] Voice connection or playback recovery failed in guild %s", self.bot_name, guild_id)
 
     async def connection_supervisor(self) -> None:
         await self.wait_until_ready()
