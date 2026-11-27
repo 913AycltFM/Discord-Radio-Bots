@@ -78,7 +78,7 @@ class RadioBot(commands.Bot):
         self.tree.add_command(leave_command)
         self.tree.add_command(discord.app_commands.Command(name='play', description='Start or resume the radio stream in this server.', callback=self.play_slash))
         self.tree.add_command(discord.app_commands.Command(name='pause', description='Pause the radio stream without leaving the voice channel.', callback=self.pause_slash))
-        self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 100 percent.', callback=self.volume_slash))
+        self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 200 percent.', callback=self.volume_slash))
         self.tree.add_command(discord.app_commands.Command(name='ping', description='Show the bot response latency.', callback=self.ping_slash))
         self.bot_name = name
         self.stream_url = stream_url
@@ -296,8 +296,8 @@ class RadioBot(commands.Bot):
         await interaction.response.send_message("Paused the radio stream in this server.")
 
     async def volume_slash(self, interaction: discord.Interaction, volume: int) -> None:
-        if not 0 <= volume <= 100:
-            await interaction.response.send_message("Choose a volume from 0 to 100.", ephemeral=True)
+        if not 0 <= volume <= 200:
+            await interaction.response.send_message("Choose a volume from 0 to 200.", ephemeral=True)
             return
         if interaction.guild is None:
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
@@ -323,7 +323,7 @@ class RadioBot(commands.Bot):
             "`/help` — Show this command list.\n"
             "`/play` — Start or resume playback in this server.\n"
             "`/pause` — Pause playback in this server.\n"
-            "`/volume` — Set this server's volume from 0–100%.\n"
+            "`/volume` — Set this server's volume from 0–200%.\n"
             "`/ping` — Show bot latency."
         )
 
