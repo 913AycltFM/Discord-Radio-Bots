@@ -60,7 +60,6 @@ class RadioBot(commands.Bot):
         self,
         *,
         name: str,
-        channel_id: int,
         stream_url: str,
         nowplaying_url: str,
         fallback_status: str,
@@ -82,7 +81,6 @@ class RadioBot(commands.Bot):
         self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 100 percent.', callback=self.volume_slash))
         self.tree.add_command(discord.app_commands.Command(name='ping', description='Show the bot response latency.', callback=self.ping_slash))
         self.bot_name = name
-        self.channel_id = channel_id
         self.stream_url = stream_url
         self.nowplaying_url = nowplaying_url
         self.fallback_status = fallback_status
@@ -180,9 +178,7 @@ class RadioBot(commands.Bot):
         await self.wait_until_ready()
         while not self.is_closed():
             try:
-                channel_ids = set(self.guild_channel_ids.values())
-                channel_ids.add(self.channel_id)
-                for channel_id in channel_ids:
+                for channel_id in set(self.guild_channel_ids.values()):
                     channel = self.get_channel(channel_id)
                     if isinstance(channel, discord.VoiceChannel) and channel.guild.id in self.guild_opted_out:
                         continue
@@ -246,8 +242,6 @@ class RadioBot(commands.Bot):
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
             return
         channel_id = self.guild_channel_ids.get(interaction.guild.id)
-        if channel_id is None and interaction.guild.id == getattr(self.get_guild_for_channel(self.channel_id), "id", None):
-            channel_id = self.channel_id
         if channel_id is None:
             await interaction.response.send_message("Use `/join` first so I know which voice channel to reconnect to.", ephemeral=True)
             return
@@ -257,10 +251,6 @@ class RadioBot(commands.Bot):
             await voice.disconnect(force=True)
         await self.ensure_connected(channel_id)
         await interaction.followup.send("Reconnected and restarted the radio stream.")
-
-    def get_guild_for_channel(self, channel_id: int):
-        channel = self.get_channel(channel_id)
-        return channel.guild if isinstance(channel, discord.abc.GuildChannel) else None
 
     async def play_slash(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:
@@ -358,7 +348,6 @@ class RadioBot(commands.Bot):
 async def run_bot(config: dict, intents: discord.Intents) -> None:
     bot = RadioBot(
         name=config["name"],
-        channel_id=int(config["channel_id"]),
         stream_url=config["stream_url"],
         nowplaying_url=config["nowplaying_url"],
         fallback_status=config.get("status_text", config["name"]),
@@ -379,7 +368,7 @@ async def main() -> None:
     if not isinstance(configs, list) or not configs:
         raise SystemExit("bots.json must contain a JSON array with at least one bot.")
 
-    required = {"name", "token", "channel_id", "stream_url", "nowplaying_url"}
+    required = {"name", "token", "stream_url", "nowplaying_url"}
     for index, config in enumerate(configs, start=1):
         if not isinstance(config, dict):
             raise SystemExit(f"Bot entry {index} must be a JSON object.")
@@ -395,17 +384,6 @@ async def main() -> None:
                 raise SystemExit(
                     f"Bot entry {index} field '{field}' must be a non-empty string."
                 )
-
-        try:
-            channel_id = int(config["channel_id"])
-        except (TypeError, ValueError):
-            raise SystemExit(
-                f"Bot entry {index} field 'channel_id' must be a numeric Discord voice-channel ID."
-            )
-        if channel_id <= 0:
-            raise SystemExit(
-                f"Bot entry {index} field 'channel_id' must be greater than zero."
-            )
 
     intents = discord.Intents.default()
     await asyncio.gather(*(run_bot(config, intents) for config in configs))
