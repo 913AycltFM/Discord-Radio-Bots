@@ -87,7 +87,7 @@ cd ~/discord-radio
 
 Follow the prompts for each station. Choose whether to add another bot when asked. The manager does not start or restart the service. After saving changes, restart the service to apply them:
 
-You can also edit the configuration manually if you prefer. Edit the starter configuration manually if you prefer:
+You can also edit the configuration manually if you prefer:
 
 ```bash
 cd ~/discord-radio
@@ -180,13 +180,13 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Check the terminal for each bot logging in. Bots without a configured `channel_id` remain out of voice until a server member joins a voice channel and runs `/join`. A bot with a configured `channel_id` automatically joins that default channel after startup. Test the slash commands in Discord:
+Check the terminal for each bot logging in. Bots without a configured `channel_id` remain out of voice until a server member joins a voice channel and runs `/join`. A bot with a configured `channel_id` automatically joins that default channel after startup. Test the slash commands in Discord. `/leave` and `/reconnect` require the Discord **Manage Server** permission; the other listed commands do not have that application-level permission check:
 
 - `/join` — join the voice channel you are currently in and start the configured radio stream. Use this in each additional server.
 - `/leave` — leave the voice channel in this server (Manage Server permission required).
 - `/nowplaying` — show the current track.
 - `/status` — check this server's voice connection and playback.
-- `/reconnect` — reconnect the bot (Manage Server permission required).
+- `/reconnect` — reconnect the bot to the last selected voice channel (Manage Server permission required).
 - `/help` — list available commands.
 - `/play` — start or resume playback.
 - `/pause` — pause audio while remaining in the channel.
@@ -254,7 +254,8 @@ sudo systemctl start discord-radio.service
 - **Bot joins but has no audio:** verify Connect and Speak permissions, confirm the stream URL is directly playable, and check that FFmpeg is installed.
 - **Now-playing does not update:** verify the API URL is reachable and returns an AzuraCast-compatible `now_playing.song` object.
 - **Voice-channel status does not update:** grant Manage Channels permission. Audio playback can work without this permission.
-- **Slash commands are missing:** check the bot invite scopes and allow time for Discord to publish newly synced global commands.
+- **Slash commands are missing:** check that the bot was invited with both `bot` and `applications.commands` scopes, then allow time for Discord to publish newly synced global commands.
+- **`/leave` or `/reconnect` is denied:** the user running either command needs the Discord **Manage Server** permission.
 - **A token was exposed:** reset it in the Discord Developer Portal and update your private `bots.json`.
 
 ## Security
