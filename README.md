@@ -162,10 +162,10 @@ You can optionally add a `channel_id` to a bot entry in your private `bots.json`
 {
   "name": "My Radio Station",
   "token": "YOUR_DISCORD_BOT_TOKEN",
+  "channel_id": 123456789012345678
   "stream_url": "https://radio.example.com/listen/station/discord",
   "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
   "status_text": "Live radio",
-  "channel_id": 123456789012345678
 }
 ```
 
