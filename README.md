@@ -78,14 +78,14 @@ Supported distributions: Ubuntu, Debian, and Raspberry Pi OS. Python 3.10 or new
 
 ## 4. Configure your station bot(s)
 
-**Recommended: use the interactive configuration wizard.** It hides Discord tokens while you type, validates HTTP(S) URLs, preserves existing bot entries, creates a backup before saving, and restricts `bots.json` to owner-only access:
+**Recommended: use the interactive bot manager.** It lets you add, edit, or remove bot entries. It hides Discord tokens while typing, validates HTTP(S) URLs, preserves existing settings when you press Enter, creates a backup before saving, and restricts `bots.json` to owner-only access:
 
 ```bash
 cd ~/discord-radio
 ./venv/bin/python configure.py
 ```
 
-Follow the prompts for each station. Choose whether to add another bot when asked. The wizard does not start the service; review your setup first, then start it using the commands below.
+Follow the prompts for each station. Choose whether to add another bot when asked. The manager does not start or restart the service. After saving changes, restart the service to apply them:
 
 You can also edit the configuration manually if you prefer. Edit the starter configuration manually if you prefer:
 
@@ -145,7 +145,7 @@ Save Nano with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**. Protect t
 chmod 600 ~/discord-radio/bots.json
 ```
 
-**Important:** The repository’s committed `bots.json` contains placeholders only. The configuration wizard replaces it locally with your real credentials and sets permissions to `600`. Never commit your edited local `bots.json`, and never publish real tokens. The repository’s `.gitignore` prevents accidental local changes from being staged.
+**Important:** The repository’s committed `bots.json` contains placeholders only. The configuration wizard replaces it locally with your real credentials and sets permissions to `600`. Never commit your edited local `bots.json`, and never publish real tokens. The installer marks the local tracked `bots.json` as Git `skip-worktree` to reduce the chance of accidentally staging private credentials. The updater temporarily clears that flag, safely backs up and restores your private configuration, and reapplies the protection. Keep the backup private too.
 
 After saving the configuration, start the service installed by `install.sh`:
 
