@@ -63,6 +63,7 @@ class RadioBot(commands.Bot):
         stream_url: str,
         nowplaying_url: str,
         fallback_status: str,
+        channel_id: int | None = None,
         **kwargs,
     ):
         super().__init__(command_prefix=commands.when_mentioned, help_command=None, **kwargs)
@@ -84,6 +85,7 @@ class RadioBot(commands.Bot):
         self.stream_url = stream_url
         self.nowplaying_url = nowplaying_url
         self.fallback_status = fallback_status
+        self.configured_channel_id = channel_id
         self.current_title: str | None = None
         self.guild_volumes: dict[int, float] = {}
         self.guild_paused: dict[int, bool] = {}
@@ -326,6 +328,19 @@ class RadioBot(commands.Bot):
     async def on_ready(self) -> None:
         log.info("[%s] Logged in as %s", self.bot_name, self.user)
 
+        # An optional configured channel starts this bot automatically.
+        # Without channel_id, the bot stays disconnected until /join is used.
+        if self.configured_channel_id is not None:
+            channel = self.get_channel(self.configured_channel_id)
+            if isinstance(channel, discord.VoiceChannel):
+                self.guild_channel_ids[channel.guild.id] = channel.id
+            else:
+                log.warning(
+                    "[%s] Configured channel_id %s was not found or is not a voice channel",
+                    self.bot_name,
+                    self.configured_channel_id,
+                )
+
         if self.connection_task is None or self.connection_task.done():
             self.connection_task = asyncio.create_task(self.connection_supervisor())
 
@@ -351,6 +366,7 @@ async def run_bot(config: dict, intents: discord.Intents) -> None:
         stream_url=config["stream_url"],
         nowplaying_url=config["nowplaying_url"],
         fallback_status=config.get("status_text", config["name"]),
+        channel_id=config.get("channel_id"),
         intents=intents,
     )
     await bot.start(config["token"])
@@ -384,6 +400,14 @@ async def main() -> None:
                 raise SystemExit(
                     f"Bot entry {index} field '{field}' must be a non-empty string."
                 )
+
+        channel_id = config.get("channel_id")
+        if channel_id is not None and (
+            isinstance(channel_id, bool) or not isinstance(channel_id, int) or channel_id <= 0
+        ):
+            raise SystemExit(
+                f"Bot entry {index} field 'channel_id' must be a positive integer when provided."
+            )
 
     intents = discord.Intents.default()
     await asyncio.gather(*(run_bot(config, intents) for config in configs))
