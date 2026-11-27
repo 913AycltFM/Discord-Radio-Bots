@@ -114,6 +114,16 @@ class RadioBot(commands.Bot):
         def after_playback(error: Exception | None) -> None:
             if error:
                 log.error("[%s] Playback error: %s", self.bot_name, error)
+            elif (
+                voice_client.is_connected()
+                and not self.is_closed()
+                and not self.guild_paused.get(guild_id, False)
+            ):
+                log.warning(
+                    "[%s] Audio playback ended unexpectedly in guild %s; scheduling recovery",
+                    self.bot_name,
+                    guild_id,
+                )
             if voice_client.is_connected() and not self.is_closed():
                 asyncio.run_coroutine_threadsafe(
                     self.restart_stream(voice_client), self.loop
@@ -170,25 +180,59 @@ class RadioBot(commands.Bot):
         if not isinstance(channel, discord.VoiceChannel):
             log.error("[%s] Voice channel %s was not found or is not a voice channel", self.bot_name, channel_id)
             return
+
         guild_id = channel.guild.id
         self.guild_channel_ids[guild_id] = channel.id
         voice_client = discord.utils.get(self.voice_clients, guild=channel.guild)
+        was_connected = bool(voice_client and voice_client.is_connected())
+
         try:
-            if voice_client and voice_client.is_connected():
+            if was_connected:
                 if voice_client.channel != channel:
+                    log.warning(
+                        "[%s] Voice connection is in the wrong channel; moving to %s",
+                        self.bot_name,
+                        channel.name,
+                    )
                     await voice_client.move_to(channel)
+                    log.info("[%s] Moved to %s in guild %s", self.bot_name, channel.name, guild_id)
             else:
+                log.warning(
+                    "[%s] Voice connection is unavailable in guild %s; reconnecting to %s",
+                    self.bot_name,
+                    guild_id,
+                    channel.name,
+                )
                 voice_client = await channel.connect(self_deaf=True, reconnect=True)
-            log.info("[%s] Connected in guild %s to %s", self.bot_name, guild_id, channel.name)
+                log.info("[%s] Voice connection restored in guild %s to %s", self.bot_name, guild_id, channel.name)
+
+            if (
+                was_connected
+                and not voice_client.is_playing()
+                and not voice_client.is_paused()
+                and not self.guild_paused.get(guild_id, False)
+            ):
+                log.warning(
+                    "[%s] Voice is connected but playback is stopped in guild %s; restarting the stream",
+                    self.bot_name,
+                    guild_id,
+                )
+
             self.start_stream(voice_client)
         except discord.DiscordException:
             log.exception("[%s] Voice connection failed in guild %s", self.bot_name, guild_id)
+        except Exception:
+            log.exception("[%s] Could not verify or start playback in guild %s", self.bot_name, guild_id)
 
     async def connection_supervisor(self) -> None:
         await self.wait_until_ready()
         while not self.is_closed():
             try:
-                for channel_id in set(self.guild_channel_ids.values()):
+                channel_ids = set(self.guild_channel_ids.values())
+                if self.configured_channel_id is not None:
+                    channel_ids.add(self.configured_channel_id)
+
+                for channel_id in channel_ids:
                     channel = self.get_channel(channel_id)
                     if isinstance(channel, discord.VoiceChannel) and channel.guild.id in self.guild_opted_out:
                         continue
@@ -377,7 +421,18 @@ class RadioBot(commands.Bot):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if self.user and member.id == self.user.id and after.channel is None:
+        if (
+            self.user
+            and member.id == self.user.id
+            and before.channel is not None
+            and after.channel is None
+        ):
+            log.warning(
+                "[%s] Discord voice state reports disconnection from %s in guild %s",
+                self.bot_name,
+                before.channel.name,
+                member.guild.id,
+            )
             channel_id = self.guild_channel_ids.get(member.guild.id)
             if channel_id is not None:
                 await asyncio.sleep(3)
