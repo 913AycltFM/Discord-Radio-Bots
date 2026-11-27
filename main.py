@@ -230,14 +230,29 @@ class RadioBot(commands.Bot):
         if interaction.guild is None:
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
             return
+
+        # Acknowledge immediately so Discord does not time out while disconnecting.
+        await interaction.response.defer(ephemeral=True)
+
+        guild_id = interaction.guild.id
+        self.guild_opted_out.add(guild_id)
+        self.guild_channel_ids.pop(guild_id, None)
+        self.guild_paused.pop(guild_id, None)
+        self.guild_volumes.pop(guild_id, None)
+
         voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
         if voice and voice.is_connected():
-            await voice.disconnect(force=True)
-        self.guild_channel_ids.pop(interaction.guild.id, None)
-        self.guild_opted_out.add(interaction.guild.id)
-        self.guild_paused.pop(interaction.guild.id, None)
-        self.guild_volumes.pop(interaction.guild.id, None)
-        await interaction.response.send_message("I left the voice channel in this server.")
+            try:
+                await voice.disconnect(force=True)
+            except Exception:
+                log.exception("[%s] Could not leave voice channel in guild %s", self.bot_name, guild_id)
+                await interaction.followup.send(
+                    "I couldn't disconnect from the voice channel. Check the bot logs.",
+                    ephemeral=True,
+                )
+                return
+
+        await interaction.followup.send("I left the voice channel in this server.", ephemeral=True)
 
     async def reconnect_slash(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:
@@ -317,7 +332,7 @@ class RadioBot(commands.Bot):
         self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
     ) -> None:
         if isinstance(error, discord.app_commands.MissingPermissions):
-            message = "You need Manage Server permission to use `/reconnect`."
+            message = "You need Manage Server permission to use `/leave` and `/reconnect`."
         else:
             log.error("[%s] Slash command error: %s", self.bot_name, error)
             message = "The command failed. Check the bot logs."
@@ -357,7 +372,11 @@ class RadioBot(commands.Bot):
             channel_id = self.guild_channel_ids.get(member.guild.id)
             if channel_id is not None:
                 await asyncio.sleep(3)
-                await self.ensure_connected(channel_id)
+                if (
+                    member.guild.id not in self.guild_opted_out
+                    and self.guild_channel_ids.get(member.guild.id) == channel_id
+                ):
+                    await self.ensure_connected(channel_id)
 
 
 async def run_bot(config: dict, intents: discord.Intents) -> None:
