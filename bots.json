@@ -2,6 +2,7 @@
   {
     "name": "My Radio Station",
     "token": "PASTE_YOUR_DISCORD_BOT_TOKEN",
+    "channel_id": 1478517001541517544,
     "stream_url": "https://radio.example.com/listen/station/discord",
     "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
     "status_text": "Live radio"
