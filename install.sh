@@ -71,10 +71,6 @@ if [[ ! -f "${CONFIG_FILE}" ]]; then
 fi
 
 chmod 600 "${CONFIG_FILE}"
-if git -C "${SCRIPT_DIR}" ls-files --error-unmatch bots.json >/dev/null 2>&1; then
-    git -C "${SCRIPT_DIR}" update-index --skip-worktree bots.json
-    echo "Protected the local bots.json from accidental Git staging."
-fi
 echo "Installed bots.json starter template with owner-only permissions."
 echo "Run the configuration wizard before starting the service."
 

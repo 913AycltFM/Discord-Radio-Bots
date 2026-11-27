@@ -17,14 +17,6 @@ logging.basicConfig(
 )
 log = logging.getLogger("discord-radio")
 
-async def require_manage_guild(interaction: discord.Interaction) -> bool:
-    return (
-        interaction.guild is not None
-        and isinstance(interaction.user, discord.Member)
-        and interaction.user.guild_permissions.manage_guild
-    )
-
-
 # PCM audio must be encoded with Opus before it can be sent to Discord voice.
 try:
     discord.opus.load_opus("libopus.so.0")
@@ -71,29 +63,27 @@ class RadioBot(commands.Bot):
         stream_url: str,
         nowplaying_url: str,
         fallback_status: str,
-        channel_id: int | None = None,
         **kwargs,
     ):
         super().__init__(command_prefix=commands.when_mentioned, help_command=None, **kwargs)
         self.tree.add_command(discord.app_commands.Command(name='nowplaying', description='Show the currently playing song.', callback=self.nowplaying_slash))
         self.tree.add_command(discord.app_commands.Command(name='status', description='Check this radio bot connection and stream status.', callback=self.status_slash))
         reconnect_command = discord.app_commands.Command(name='reconnect', description='Reconnect this bot to its radio voice channel.', callback=self.reconnect_slash)
-        reconnect_command.add_check(require_manage_guild)
+        reconnect_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
         self.tree.add_command(reconnect_command)
         self.tree.add_command(discord.app_commands.Command(name='help', description='Show the available radio commands.', callback=self.help_slash))
         self.tree.add_command(discord.app_commands.Command(name='join', description='Join your current voice channel and start the radio.', callback=self.join_slash))
         leave_command = discord.app_commands.Command(name='leave', description='Leave the voice channel in this server.', callback=self.leave_slash)
-        leave_command.add_check(require_manage_guild)
+        leave_command.add_check(discord.app_commands.checks.has_permissions(manage_guild=True))
         self.tree.add_command(leave_command)
         self.tree.add_command(discord.app_commands.Command(name='play', description='Start or resume the radio stream in this server.', callback=self.play_slash))
         self.tree.add_command(discord.app_commands.Command(name='pause', description='Pause the radio stream without leaving the voice channel.', callback=self.pause_slash))
-        self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 200 percent.', callback=self.volume_slash))
+        self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 100 percent.', callback=self.volume_slash))
         self.tree.add_command(discord.app_commands.Command(name='ping', description='Show the bot response latency.', callback=self.ping_slash))
         self.bot_name = name
         self.stream_url = stream_url
         self.nowplaying_url = nowplaying_url
         self.fallback_status = fallback_status
-        self.configured_channel_id = channel_id
         self.current_title: str | None = None
         self.guild_volumes: dict[int, float] = {}
         self.guild_paused: dict[int, bool] = {}
@@ -113,18 +103,10 @@ class RadioBot(commands.Bot):
 
         def after_playback(error: Exception | None) -> None:
             if error:
-                log.error("[%s] Playback process ended with an error: %s", self.bot_name, error)
-            else:
-                log.warning("[%s] Playback process ended; checking recovery", self.bot_name)
-
+                log.error("[%s] Playback error: %s", self.bot_name, error)
             if voice_client.is_connected() and not self.is_closed():
                 asyncio.run_coroutine_threadsafe(
                     self.restart_stream(voice_client), self.loop
-                )
-            else:
-                log.warning(
-                    "[%s] Playback ended while voice was disconnected; connection supervisor will handle recovery",
-                    self.bot_name
                 )
 
         voice_client.play(source, after=after_playback)
@@ -178,58 +160,25 @@ class RadioBot(commands.Bot):
         if not isinstance(channel, discord.VoiceChannel):
             log.error("[%s] Voice channel %s was not found or is not a voice channel", self.bot_name, channel_id)
             return
-
         guild_id = channel.guild.id
         self.guild_channel_ids[guild_id] = channel.id
         voice_client = discord.utils.get(self.voice_clients, guild=channel.guild)
-
         try:
             if voice_client and voice_client.is_connected():
                 if voice_client.channel != channel:
-                    log.info(
-                        "[%s] Moving voice connection in guild %s to %s",
-                        self.bot_name, guild_id, channel.name
-                    )
                     await voice_client.move_to(channel)
             else:
-                if voice_client is not None:
-                    log.warning(
-                        "[%s] Voice connection lost in guild %s; reconnecting",
-                        self.bot_name, guild_id
-                    )
-                    await voice_client.disconnect(force=True)
-
                 voice_client = await channel.connect(self_deaf=True, reconnect=True)
-                log.info(
-                    "[%s] Connected to %s in guild %s",
-                    self.bot_name, channel.name, guild_id
-                )
-
-            if (
-                voice_client.is_connected()
-                and not voice_client.is_playing()
-                and not voice_client.is_paused()
-                and not self.guild_paused.get(guild_id, False)
-            ):
-                log.warning(
-                    "[%s] Radio playback is not active in guild %s; restarting stream",
-                    self.bot_name, guild_id
-                )
-
+            log.info("[%s] Connected in guild %s to %s", self.bot_name, guild_id, channel.name)
             self.start_stream(voice_client)
-
         except discord.DiscordException:
-            log.exception("[%s] Voice connection or playback recovery failed in guild %s", self.bot_name, guild_id)
+            log.exception("[%s] Voice connection failed in guild %s", self.bot_name, guild_id)
 
     async def connection_supervisor(self) -> None:
         await self.wait_until_ready()
         while not self.is_closed():
             try:
-                channel_ids = set(self.guild_channel_ids.values())
-                if self.configured_channel_id is not None:
-                    channel_ids.add(self.configured_channel_id)
-
-                for channel_id in channel_ids:
+                for channel_id in set(self.guild_channel_ids.values()):
                     channel = self.get_channel(channel_id)
                     if isinstance(channel, discord.VoiceChannel) and channel.guild.id in self.guild_opted_out:
                         continue
@@ -279,30 +228,14 @@ class RadioBot(commands.Bot):
         if interaction.guild is None:
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
             return
-
-        # Acknowledge immediately, then edit the original response when finished.
-        await interaction.response.defer(ephemeral=True)
-
-        guild_id = interaction.guild.id
-        try:
-            self.guild_opted_out.add(guild_id)
-            self.guild_channel_ids.pop(guild_id, None)
-            self.guild_paused.pop(guild_id, None)
-            self.guild_volumes.pop(guild_id, None)
-
-            voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
-            if voice and voice.is_connected():
-                await voice.disconnect(force=True)
-        except Exception:
-            log.exception("[%s] Could not leave voice channel in guild %s", self.bot_name, guild_id)
-            message = "I couldn't leave the voice channel. Check the bot logs."
-        else:
-            message = "I left the voice channel in this server."
-
-        try:
-            await interaction.edit_original_response(content=message)
-        except discord.HTTPException:
-            log.exception("[%s] Could not send the /leave response in guild %s", self.bot_name, guild_id)
+        voice = discord.utils.get(self.voice_clients, guild=interaction.guild)
+        if voice and voice.is_connected():
+            await voice.disconnect(force=True)
+        self.guild_channel_ids.pop(interaction.guild.id, None)
+        self.guild_opted_out.add(interaction.guild.id)
+        self.guild_paused.pop(interaction.guild.id, None)
+        self.guild_volumes.pop(interaction.guild.id, None)
+        await interaction.response.send_message("I left the voice channel in this server.")
 
     async def reconnect_slash(self, interaction: discord.Interaction) -> None:
         if interaction.guild is None:
@@ -347,8 +280,8 @@ class RadioBot(commands.Bot):
         await interaction.response.send_message("Paused the radio stream in this server.")
 
     async def volume_slash(self, interaction: discord.Interaction, volume: int) -> None:
-        if not 0 <= volume <= 200:
-            await interaction.response.send_message("Choose a volume from 0 to 200.", ephemeral=True)
+        if not 0 <= volume <= 100:
+            await interaction.response.send_message("Choose a volume from 0 to 100.", ephemeral=True)
             return
         if interaction.guild is None:
             await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
@@ -374,15 +307,15 @@ class RadioBot(commands.Bot):
             "`/help` — Show this command list.\n"
             "`/play` — Start or resume playback in this server.\n"
             "`/pause` — Pause playback in this server.\n"
-            "`/volume` — Set this server's volume from 0–200%.\n"
+            "`/volume` — Set this server's volume from 0–100%.\n"
             "`/ping` — Show bot latency."
         )
 
     async def on_app_command_error(
         self, interaction: discord.Interaction, error: discord.app_commands.AppCommandError
     ) -> None:
-        if isinstance(error, (discord.app_commands.MissingPermissions, discord.app_commands.CheckFailure)):
-            message = "You need Manage Server permission to use `/leave` and `/reconnect`."
+        if isinstance(error, discord.app_commands.MissingPermissions):
+            message = "You need Manage Server permission to use `/reconnect`."
         else:
             log.error("[%s] Slash command error: %s", self.bot_name, error)
             message = "The command failed. Check the bot logs."
@@ -392,19 +325,6 @@ class RadioBot(commands.Bot):
             await interaction.response.send_message(message, ephemeral=True)
     async def on_ready(self) -> None:
         log.info("[%s] Logged in as %s", self.bot_name, self.user)
-
-        # An optional configured channel starts this bot automatically.
-        # Without channel_id, the bot stays disconnected until /join is used.
-        if self.configured_channel_id is not None:
-            channel = self.get_channel(self.configured_channel_id)
-            if isinstance(channel, discord.VoiceChannel):
-                self.guild_channel_ids[channel.guild.id] = channel.id
-            else:
-                log.warning(
-                    "[%s] Configured channel_id %s was not found or is not a voice channel",
-                    self.bot_name,
-                    self.configured_channel_id,
-                )
 
         if self.connection_task is None or self.connection_task.done():
             self.connection_task = asyncio.create_task(self.connection_supervisor())
@@ -418,26 +338,11 @@ class RadioBot(commands.Bot):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if (
-            self.user
-            and member.id == self.user.id
-            and before.channel is not None
-            and after.channel is None
-        ):
-            log.warning(
-                "[%s] Discord voice state reports disconnection from %s in guild %s",
-                self.bot_name,
-                before.channel.name,
-                member.guild.id,
-            )
+        if self.user and member.id == self.user.id and after.channel is None:
             channel_id = self.guild_channel_ids.get(member.guild.id)
             if channel_id is not None:
                 await asyncio.sleep(3)
-                if (
-                    member.guild.id not in self.guild_opted_out
-                    and self.guild_channel_ids.get(member.guild.id) == channel_id
-                ):
-                    await self.ensure_connected(channel_id)
+                await self.ensure_connected(channel_id)
 
 
 async def run_bot(config: dict, intents: discord.Intents) -> None:
@@ -446,7 +351,6 @@ async def run_bot(config: dict, intents: discord.Intents) -> None:
         stream_url=config["stream_url"],
         nowplaying_url=config["nowplaying_url"],
         fallback_status=config.get("status_text", config["name"]),
-        channel_id=config.get("channel_id"),
         intents=intents,
     )
     await bot.start(config["token"])
@@ -480,14 +384,6 @@ async def main() -> None:
                 raise SystemExit(
                     f"Bot entry {index} field '{field}' must be a non-empty string."
                 )
-
-        channel_id = config.get("channel_id")
-        if channel_id is not None and (
-            isinstance(channel_id, bool) or not isinstance(channel_id, int) or channel_id <= 0
-        ):
-            raise SystemExit(
-                f"Bot entry {index} field 'channel_id' must be a positive integer when provided."
-            )
 
     intents = discord.Intents.default()
     await asyncio.gather(*(run_bot(config, intents) for config in configs))

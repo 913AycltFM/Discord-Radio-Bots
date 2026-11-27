@@ -20,13 +20,13 @@ The project is designed for Linux servers, including Raspberry Pi and Ubuntu Ser
 
 ## How it works
 
-Each object in `bots.json` starts one independent public Discord radio bot. By default, it stays disconnected from voice channels after startup. Invite it to any Discord server, join the voice channel where you want the station to play, and run `/join`. You can optionally configure a `channel_id` to have the bot automatically join one default voice channel after startup. The bot can serve multiple Discord servers at the same time, with a separate voice connection and independent pause, volume, and leave controls in each server.
+Each object in `bots.json` starts one independent public Discord radio bot. It stays disconnected from voice channels after startup. Invite it to any Discord server, join the voice channel where you want the station to play, and run `/join`. The bot can serve multiple Discord servers at the same time, with a separate voice connection and independent pause, volume, and leave controls in each server.
 
 You can configure different stations from the same radio host or stations from different providers. The application does not require AzuraCast specifically for audio playback; the stream URL must be directly playable by FFmpeg. The now-playing endpoint must return the AzuraCast-compatible JSON structure used by this project.
 
 ## Requirements
 
-- Linux host (Ubuntu Server or Raspberry Pi Lite OS recommended)
+- Linux host (Ubuntu Server or Raspberry Pi OS recommended)
 - Python 3.10 or newer
 - FFmpeg
 - libopus
@@ -54,7 +54,7 @@ Repeat these steps for every station/bot. Never publish bot tokens or paste them
 
 ## 2. Choose where the radio plays
 
-By default, the bot does not have a preset home server or voice channel. After inviting it to a Discord server, join the voice channel where you want the station to play and run `/join`. Each server chooses its own voice channel independently. If you configure the optional `channel_id`, the bot will automatically join that default voice channel after startup.
+The bot does not have a preset home server or voice channel. After inviting it to a Discord server, join the voice channel where you want the station to play and run `/join`. Each server chooses its own voice channel independently.
 
 ## 3. Install the project
 
@@ -78,16 +78,16 @@ Supported distributions: Ubuntu, Debian, and Raspberry Pi OS. Python 3.10 or new
 
 ## 4. Configure your station bot(s)
 
-**Recommended: use the interactive bot manager.** It lets you add, edit, or remove bot entries. It hides Discord tokens while typing, validates HTTP(S) URLs, preserves existing settings when you press Enter, creates a backup before saving, and restricts `bots.json` to owner-only access:
+**Recommended: use the interactive configuration wizard.** It hides Discord tokens while you type, validates HTTP(S) URLs, preserves existing bot entries, creates a backup before saving, and restricts `bots.json` to owner-only access:
 
 ```bash
 cd ~/discord-radio
 ./venv/bin/python configure.py
 ```
 
-Follow the prompts for each station. Choose whether to add another bot when asked. The manager does not start or restart the service. After saving changes, restart the service to apply them:
+Follow the prompts for each station. Choose whether to add another bot when asked. The wizard does not start the service; review your setup first, then start it using the commands below.
 
-You can also edit the configuration manually if you prefer:
+You can also edit the configuration manually if you prefer. Edit the starter configuration manually if you prefer:
 
 ```bash
 cd ~/discord-radio
@@ -145,7 +145,7 @@ Save Nano with **Ctrl+O**, press **Enter**, then exit with **Ctrl+X**. Protect t
 chmod 600 ~/discord-radio/bots.json
 ```
 
-**Important:** The repository’s committed `bots.json` contains placeholders only. The configuration wizard replaces it locally with your real credentials and sets permissions to `600`. Never commit your edited local `bots.json`, and never publish real tokens. The installer marks the local tracked `bots.json` as Git `skip-worktree` to reduce the chance of accidentally staging private credentials. The updater temporarily clears that flag, safely backs up and restores your private configuration, and reapplies the protection. Keep the backup private too.
+**Important:** The repository’s committed `bots.json` contains placeholders only. The configuration wizard replaces it locally with your real credentials and sets permissions to `600`. Never commit your edited local `bots.json`, and never publish real tokens. The repository’s `.gitignore` prevents accidental local changes from being staged.
 
 After saving the configuration, start the service installed by `install.sh`:
 
@@ -153,23 +153,6 @@ After saving the configuration, start the service installed by `install.sh`:
 sudo systemctl enable --now discord-radio.service
 sudo systemctl status discord-radio.service --no-pager
 ```
-
-### Optional default voice channel
-
-You can optionally add a `channel_id` to a bot entry in your private `bots.json`:
-
-```json
-{
-  "name": "My Radio Station",
-  "token": "YOUR_DISCORD_BOT_TOKEN",
-  "channel_id": 123456789012345678,
-  "stream_url": "https://radio.example.com/listen/station/discord",
-  "nowplaying_url": "https://radio.example.com/api/nowplaying/station",
-  "status_text": "Live radio"
-}
-```
-
-Replace the example number with the ID of a voice channel the bot can access. When set, the bot automatically joins that channel after startup. This setting is optional, so the public `bots.json` starter template does not include a `channel_id` property. Add the property only to your private `bots.json` if you want automatic joining. If you omit it or leave the wizard prompt blank, the bot stays disconnected until someone joins a voice channel and runs `/join`. The configured channel must belong to a server where the bot is installed.
 
 ## 5. Test the bots
 
@@ -180,17 +163,17 @@ cd ~/discord-radio
 ./venv/bin/python main.py
 ```
 
-Check the terminal for each bot logging in. Bots without a configured `channel_id` remain out of voice until a server member joins a voice channel and runs `/join`. A bot with a configured `channel_id` automatically joins that default channel after startup. Test the slash commands in Discord. `/leave` and `/reconnect` require the Discord **Manage Server** permission; the other listed commands do not have that application-level permission check:
+Check the terminal for each bot logging in. Bots remain out of voice until a server member joins a voice channel and runs `/join`. Test the slash commands in Discord:
 
 - `/join` — join the voice channel you are currently in and start the configured radio stream. Use this in each additional server.
 - `/leave` — leave the voice channel in this server (Manage Server permission required).
 - `/nowplaying` — show the current track.
 - `/status` — check this server's voice connection and playback.
-- `/reconnect` — reconnect the bot to the last selected voice channel (Manage Server permission required).
+- `/reconnect` — reconnect the bot (Manage Server permission required).
 - `/help` — list available commands.
 - `/play` — start or resume playback.
 - `/pause` — pause audio while remaining in the channel.
-- `/volume` — set volume from 0 to 200 percent. Values above 100% amplify the audio and may cause distortion.
+- `/volume` — set volume from 0 to 100 percent.
 - `/ping` — show Discord gateway latency.
 
 Stop the manual test with **Ctrl+C** before installing the system service.
@@ -203,29 +186,6 @@ The installer has already created the systemd unit. After you have configured an
 sudo systemctl enable --now discord-radio.service
 sudo systemctl status discord-radio.service --no-pager
 ```
-
-## Update the bot software
-
-After making sure your private configuration is backed up, run the updater from your project checkout:
-
-```bash
-cd ~/discord-radio
-./update.sh
-```
-
-The updater:
-
-1. Makes a private, permission-restricted temporary backup of your local `bots.json`.
-2. Temporarily clears the Git `skip-worktree` protection on the tracked starter file, then restores the public template before pulling.
-3. Pulls the latest `main` branch using `git pull --ff-only`; it will not create a merge commit.
-4. Restores your private `bots.json`, sets its permissions to `600`, and reapplies Git's `skip-worktree` protection.
-5. Installs the Python dependencies listed in `requirements.txt`.
-6. Checks the syntax of `main.py` and `configure.py`.
-7. Restarts `discord-radio.service` and displays its status.
-
-Run this updater from the same project checkout used by the systemd service. It updates the project files in that checkout; it does not migrate the installation to another directory. If the fast-forward-only pull is blocked by local Git changes or a divergent branch, stop and review the Git status rather than forcing the update. Keep your own separate backups of `bots.json`; never commit real tokens or private stream URLs.
-
-The updater is intended for the standard installation created by `install.sh`. It expects the virtual environment at `./venv` and the service name `discord-radio.service`.
 
 ## 7. Service commands
 
@@ -262,12 +222,11 @@ sudo systemctl start discord-radio.service
 ## Troubleshooting
 
 - **Bot does not log in:** check its token and confirm the bot has been added to your server.
-- **Bot does not join voice:** if no `channel_id` is configured, join a voice channel in the server and run `/join`. If a `channel_id` is configured, verify that it is the correct voice-channel ID and that the bot has View Channel, Connect, and Speak permissions.
+- **Bot does not join voice:** join a voice channel in the server and run `/join`; confirm the bot has View Channel, Connect, and Speak permissions.
 - **Bot joins but has no audio:** verify Connect and Speak permissions, confirm the stream URL is directly playable, and check that FFmpeg is installed.
 - **Now-playing does not update:** verify the API URL is reachable and returns an AzuraCast-compatible `now_playing.song` object.
 - **Voice-channel status does not update:** grant Manage Channels permission. Audio playback can work without this permission.
-- **Slash commands are missing:** check that the bot was invited with both `bot` and `applications.commands` scopes, then allow time for Discord to publish newly synced global commands.
-- **`/leave` or `/reconnect` is denied:** the user running either command needs the Discord **Manage Server** permission.
+- **Slash commands are missing:** check the bot invite scopes and allow time for Discord to publish newly synced global commands.
 - **A token was exposed:** reset it in the Discord Developer Portal and update your private `bots.json`.
 
 ## Security
