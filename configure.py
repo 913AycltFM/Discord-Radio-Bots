@@ -1,36 +1,21 @@
 #!/usr/bin/env python3
-"""Interactive, token-safe configuration wizard for Discord Radio Bots."""
+"""Interactive, token-safe configuration manager for Discord Radio Bots."""
 
 import getpass
 import json
 import os
-import re
 import shutil
-import sys
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "bots.json"
-EXAMPLE_TOKEN = "PASTE_YOUR_DISCORD_BOT_TOKEN"
 
 
-def ask_required(prompt: str) -> str:
-    while True:
-        value = input(prompt).strip()
-        if value:
-            return value
-        print("This field is required.")
-
-
-def ask_url(prompt: str) -> str:
-    while True:
-        value = ask_required(prompt)
-        parsed = urlparse(value)
-        if parsed.scheme in {"http", "https"} and parsed.netloc:
-            return value
-        print("Enter a valid http:// or https:// URL.")
+def is_placeholder(item: dict) -> bool:
+    token = str(item.get("token", ""))
+    return not token or token.startswith("PASTE_")
 
 
 def load_existing() -> list[dict]:
@@ -42,43 +27,76 @@ def load_existing() -> list[dict]:
         raise SystemExit(f"Could not read bots.json: {exc}")
     if not isinstance(data, list):
         raise SystemExit("bots.json must contain a JSON array.")
-    # Treat the untouched public example as an empty starter configuration.
-    return [
-        item for item in data
-        if not (
-            isinstance(item, dict)
-            and item.get("token") == EXAMPLE_TOKEN
-        )
-    ]
+    if any(not isinstance(item, dict) for item in data):
+        raise SystemExit("Every bots.json entry must be a JSON object.")
+    # Ignore untouched public starter entries, but preserve configured bots.
+    return [item for item in data if not is_placeholder(item)]
 
 
-def collect_bot(existing_names: set[str]) -> dict:
-    print("\n--- New radio bot ---")
+def ask_required(prompt: str, current: str | None = None) -> str:
     while True:
-        name = ask_required("Station/bot display name: ")
+        suffix = f" [{current}]" if current else ""
+        value = input(f"{prompt}{suffix}: ").strip()
+        if value:
+            return value
+        if current is not None:
+            return current
+        print("This field is required.")
+
+
+def valid_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def ask_url(prompt: str, current: str | None = None) -> str:
+    while True:
+        value = input(f"{prompt}" + (f" [{current}]" if current else "") + ": ").strip()
+        if not value and current is not None:
+            return current
+        if valid_url(value):
+            return value
+        print("Enter a valid http:// or https:// URL.")
+
+
+def ask_channel_id(current: int | None = None, adding: bool = False) -> int | None:
+    if adding:
+        prompt = "Optional default Discord voice channel ID (Enter to skip): "
+    else:
+        shown = str(current) if current is not None else "not set"
+        prompt = (
+            f"Default voice channel ID [{shown}] "
+            "(Enter keeps it; type 'none' to clear): "
+        )
+    while True:
+        value = input(prompt).strip()
+        if not value:
+            return None if adding else current
+        if not adding and value.lower() in {"none", "clear"}:
+            return None
+        if value.isdigit() and int(value) > 0:
+            return int(value)
+        print("Enter a positive channel ID" + (", or leave blank to skip." if adding else ", 'none', or press Enter."))
+
+
+def collect_new_bot(existing_names: set[str]) -> dict:
+    print("\n--- Add a station bot ---")
+    while True:
+        name = ask_required("Station/bot display name")
         if name not in existing_names:
             break
-        print("That name is already configured. Choose a different name.")
+        print("That name is already configured.")
 
     while True:
         token = getpass.getpass("Discord bot token (input hidden): ").strip()
-        if token and token != EXAMPLE_TOKEN:
+        if token and not token.startswith("PASTE_"):
             break
         print("A real Discord bot token is required.")
 
-    stream_url = ask_url("Direct radio stream URL: ")
-    nowplaying_url = ask_url("Now-playing API URL: ")
+    stream_url = ask_url("Direct radio stream URL")
+    nowplaying_url = ask_url("Now-playing API URL")
     status_text = input(f"Fallback status [{name}]: ").strip() or name
-
-    channel_id_text = input(
-        "Optional default Discord voice channel ID (press Enter to skip): "
-    ).strip()
-    if channel_id_text:
-        if not channel_id_text.isdigit() or int(channel_id_text) <= 0:
-            raise SystemExit("Channel ID must be a positive number, or leave it blank.")
-        channel_id = int(channel_id_text)
-    else:
-        channel_id = None
+    channel_id = ask_channel_id(adding=True)
 
     result = {
         "name": name,
@@ -92,15 +110,56 @@ def collect_bot(existing_names: set[str]) -> dict:
     return result
 
 
+def edit_bot(bot: dict) -> dict:
+    print(f"\nEditing: {bot.get('name', 'Unnamed bot')}")
+    edited = dict(bot)
+    edited["name"] = ask_required("Station/bot display name", str(bot.get("name", "")))
+
+    token = getpass.getpass("New Discord bot token (Enter keeps current; input hidden): ").strip()
+    if token:
+        if token.startswith("PASTE_"):
+            print("Placeholder token ignored; existing token kept.")
+        else:
+            edited["token"] = token
+
+    edited["stream_url"] = ask_url("Direct radio stream URL", str(bot.get("stream_url", "")))
+    edited["nowplaying_url"] = ask_url("Now-playing API URL", str(bot.get("nowplaying_url", "")))
+    edited["status_text"] = input(
+        f"Fallback status [{bot.get('status_text') or bot.get('name', '')}]: "
+    ).strip() or bot.get("status_text") or bot.get("name", "")
+
+    channel_id = ask_channel_id(bot.get("channel_id"))
+    if channel_id is None:
+        edited.pop("channel_id", None)
+    else:
+        edited["channel_id"] = channel_id
+    return edited
+
+
+def choose_bot(configs: list[dict]) -> int | None:
+    if not configs:
+        print("No configured bots.")
+        return None
+    for index, bot in enumerate(configs, start=1):
+        print(f"  {index}. {bot.get('name', 'Unnamed bot')}")
+    while True:
+        value = input("Select bot number (Enter to cancel): ").strip()
+        if not value:
+            return None
+        if value.isdigit() and 1 <= int(value) <= len(configs):
+            return int(value) - 1
+        print("Choose one of the listed numbers.")
+
+
 def save_config(configs: list[dict]) -> None:
     if not configs:
-        raise SystemExit("No bot entries were provided; bots.json was not changed.")
-
+        raise SystemExit("At least one bot must remain configured; bots.json was not changed.")
     if CONFIG_FILE.exists():
         backup = CONFIG_FILE.with_name("bots.json.backup")
         if not backup.exists():
             shutil.copy2(CONFIG_FILE, backup)
-            print(f"Existing configuration backed up to {backup.name}.")
+            os.chmod(backup, 0o600)
+            print(f"Original configuration backed up to {backup.name}.")
 
     fd, temporary_name = tempfile.mkstemp(
         prefix="bots.", suffix=".json.tmp", dir=BASE_DIR, text=True
@@ -118,36 +177,68 @@ def save_config(configs: list[dict]) -> None:
 
 
 def main() -> int:
-    print("Discord Radio Bots — Configuration Wizard")
-    print("Your bot token is hidden while typing and is never printed.\n")
-
     configs = load_existing()
-    if configs:
-        print(f"Found {len(configs)} existing bot configuration(s).")
-        print("New entries will be added; existing entries will be preserved.")
-    else:
-        print("No configured bots found. Let's add your first station.")
+    print("Discord Radio Bots — Configuration Manager")
+    print("Tokens are hidden while typing and are never displayed.\n")
 
     while True:
-        names = {item.get("name", "") for item in configs if isinstance(item, dict)}
-        configs.append(collect_bot(names))
-        answer = input("\nAdd another station/bot? [y/N]: ").strip().lower()
-        if answer not in {"y", "yes"}:
-            break
+        print("\nConfigured bots:")
+        if configs:
+            for index, bot in enumerate(configs, start=1):
+                print(f"  {index}. {bot.get('name', 'Unnamed bot')}")
+        else:
+            print("  No configured bots yet.")
+        print("\nChoose an action:")
+        print("  1. Add a bot")
+        print("  2. Edit a bot")
+        print("  3. Remove a bot")
+        print("  4. Save and exit")
+        choice = input("Selection [1-4]: ").strip()
 
-    save_config(configs)
-    print(f"\nSaved {len(configs)} bot configuration(s) to bots.json.")
-    print("File permissions set to 600. Keep this file private; never commit it.")
-    print("\nNext steps:")
-    print("  1. Check the configuration: python3 -m json.tool bots.json")
-    print("  2. Start the service: sudo systemctl enable --now discord-radio.service")
-    print("  3. Check status: sudo systemctl status discord-radio.service --no-pager")
-    return 0
+        if choice == "1":
+            names = {str(bot.get("name", "")) for bot in configs}
+            configs.append(collect_new_bot(names))
+        elif choice == "2":
+            index = choose_bot(configs)
+            if index is not None:
+                edited = edit_bot(configs[index])
+                duplicate = any(
+                    i != index and bot.get("name") == edited.get("name")
+                    for i, bot in enumerate(configs)
+                )
+                if duplicate:
+                    print("That name is already used by another bot; changes discarded.")
+                else:
+                    configs[index] = edited
+                    print("Bot changes staged.")
+        elif choice == "3":
+            if len(configs) <= 1:
+                print("At least one bot must remain configured.")
+                continue
+            index = choose_bot(configs)
+            if index is not None:
+                name = configs[index].get("name", "Unnamed bot")
+                confirm = input(f"Remove '{name}'? [y/N]: ").strip().lower()
+                if confirm in {"y", "yes"}:
+                    configs.pop(index)
+                    print("Bot removed from the pending configuration.")
+        elif choice == "4":
+            if not configs:
+                print("Add at least one bot before saving.")
+                continue
+            save_config(configs)
+            print(f"\nSaved {len(configs)} bot configuration(s).")
+            print("bots.json permissions are set to 600. Keep this file private.")
+            print("Restart the service to apply changes:")
+            print("  sudo systemctl restart discord-radio.service")
+            return 0
+        else:
+            print("Choose 1, 2, 3, or 4.")
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except (KeyboardInterrupt, EOFError):
-        print("\nCancelled. No new configuration was saved.")
+        print("\nCancelled. Changes were not saved.")
         raise SystemExit(130)
