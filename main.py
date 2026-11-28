@@ -63,6 +63,7 @@ class RadioBot(commands.Bot):
         stream_url: str,
         nowplaying_url: str,
         fallback_status: str,
+        channel_id: int,
         **kwargs,
     ):
         super().__init__(command_prefix=commands.when_mentioned, help_command=None, **kwargs)
@@ -81,6 +82,7 @@ class RadioBot(commands.Bot):
         self.tree.add_command(discord.app_commands.Command(name='volume', description='Set the radio volume from 0 to 200 percent.', callback=self.volume_slash))
         self.tree.add_command(discord.app_commands.Command(name='ping', description='Show the bot response latency.', callback=self.ping_slash))
         self.bot_name = name
+        self.configured_channel_id = channel_id
         self.stream_url = stream_url
         self.nowplaying_url = nowplaying_url
         self.fallback_status = fallback_status
@@ -171,6 +173,7 @@ class RadioBot(commands.Bot):
                 voice_client = await channel.connect(self_deaf=True, reconnect=True)
             log.info("[%s] Connected in guild %s to %s", self.bot_name, guild_id, channel.name)
             self.start_stream(voice_client)
+
         except discord.DiscordException:
             log.exception("[%s] Voice connection failed in guild %s", self.bot_name, guild_id)
 
@@ -342,6 +345,26 @@ class RadioBot(commands.Bot):
     async def on_ready(self) -> None:
         log.info("[%s] Logged in as %s", self.bot_name, self.user)
 
+        channel = self.get_channel(self.configured_channel_id)
+        if channel is None:
+            try:
+                channel = await self.fetch_channel(self.configured_channel_id)
+            except discord.DiscordException:
+                log.exception(
+                    "[%s] Could not resolve configured voice channel %s",
+                    self.bot_name, self.configured_channel_id
+                )
+                channel = None
+
+        if isinstance(channel, discord.VoiceChannel):
+            self.guild_channel_ids[channel.guild.id] = channel.id
+            await self.ensure_connected(channel.id)
+        else:
+            log.error(
+                "[%s] Configured channel %s is not a voice channel",
+                self.bot_name, self.configured_channel_id
+            )
+
         if self.connection_task is None or self.connection_task.done():
             self.connection_task = asyncio.create_task(self.connection_supervisor())
 
@@ -367,6 +390,7 @@ async def run_bot(config: dict, intents: discord.Intents) -> None:
         stream_url=config["stream_url"],
         nowplaying_url=config["nowplaying_url"],
         fallback_status=config.get("status_text", config["name"]),
+        channel_id=config["channel_id"],
         intents=intents,
     )
     await bot.start(config["token"])
@@ -384,7 +408,7 @@ async def main() -> None:
     if not isinstance(configs, list) or not configs:
         raise SystemExit("bots.json must contain a JSON array with at least one bot.")
 
-    required = {"name", "token", "stream_url", "nowplaying_url"}
+    required = {"name", "token", "stream_url", "nowplaying_url", "channel_id"}
     for index, config in enumerate(configs, start=1):
         if not isinstance(config, dict):
             raise SystemExit(f"Bot entry {index} must be a JSON object.")
@@ -394,6 +418,9 @@ async def main() -> None:
             raise SystemExit(
                 f"Bot entry {index} is missing: {', '.join(sorted(missing))}"
             )
+
+        if not isinstance(config["channel_id"], int) or isinstance(config["channel_id"], bool):
+            raise SystemExit(f"Bot entry {index} field 'channel_id' must be an integer.")
 
         for field in ("name", "token", "stream_url", "nowplaying_url"):
             if not isinstance(config[field], str) or not config[field].strip():
